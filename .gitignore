@@ -130,3 +130,6 @@ dmypy.json
 
 # data
 datasets/
+
+# Mac Shit
+.DS_Store
