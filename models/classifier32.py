@@ -41,7 +41,7 @@ class classifier32(nn.Module):
         self.dr3 = nn.Dropout2d(0.2)
 
         self.apply(weights_init)
-        self.cuda()
+        #self.cuda() # Change by Philip and Christian
 
     def forward(self, x, return_feature=False):
         x = self.dr1(x)
