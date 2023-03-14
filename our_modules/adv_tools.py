@@ -22,4 +22,4 @@ def fp_osr_fgsm(model, x, eps=0.05):
     return fgsm(model, x, torch.zeros(len(x)), eps, lambda y_hat, y: torch.linalg.norm(y_hat, dim=-1, ord=torch.inf))
 
 def fn_osr_fgsm(model, x, eps=0.05):
-    return fgsm(model, x, None, -eps, lambda y_hat, y: torch.linalg.norm(y_hat, dim=-1, ord=torch.inf))
+    return fgsm(model, x, torch.zeros(len(x)), -eps, lambda y_hat, y: torch.linalg.norm(y_hat, dim=-1, ord=None))
