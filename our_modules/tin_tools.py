@@ -116,7 +116,7 @@ def get_osr_dataloader_for_split(split_num, tin_val_root_dir, batch_size=100, sh
     dataset = TinyImageNet(root=tin_val_root_dir, transform=test_transform)
     return DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
 
-def evaluate_osr_auroc(model, dataloader, split_num, device, logdir=None, adv_attack=lambda x, y: x, adv_attack_name="plain"):
+def evaluate_osr_auroc(model, dataloader, split_num, device, logdir=None, adv_attack=lambda x, y, model: x, adv_attack_name="plain"):
     targets = []
     all_csr_targets = []
     mls_scores = []
@@ -127,8 +127,7 @@ def evaluate_osr_auroc(model, dataloader, split_num, device, logdir=None, adv_at
         input_batch = input_batch.to(device)
         target_batch = get_osr_targets(target_batch, split_num)
         target_batch = target_batch.to(device)
-        input_batch = adv_attack(input_batch, target_batch) # perform the adversarial attack
-
+        input_batch = adv_attack(input_batch, target_batch, model) # perform the adversarial attack
         logits = model(input_batch).detach().to('cpu')
         all_logits += logits,
         #logits = nn.Softmax(dim=-1)(logits) # Test for comparing with MSP
@@ -147,7 +146,7 @@ def evaluate_osr_auroc(model, dataloader, split_num, device, logdir=None, adv_at
 
     return roc_auc_score(targets, mls_scores)
 
-def get_avg_osr_auroc_across_splits(path_to_pretrained_weights_folder, tin_val_root_dir, device, logdir=None, batch_size=100, shuffle=False, adv_attack=lambda x, y:x, adv_attack_name='plain'):
+def get_avg_osr_auroc_across_splits(path_to_pretrained_weights_folder, tin_val_root_dir, device, logdir=None, batch_size=100, shuffle=False, adv_attack=lambda x, y, model:x, adv_attack_name='plain'):
     aurocs = []
     for split_num in tqdm(range(5)):
         model = get_model_for_split(split_num, path_to_pretrained_weights_folder, device=device)
