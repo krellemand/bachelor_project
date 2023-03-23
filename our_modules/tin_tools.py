@@ -26,6 +26,8 @@ from data.open_set_splits.osr_splits import osr_splits
 
 # imports from our modules
 from our_modules.adv_tools import fgsm, fn_osr_fgsm, fp_osr_fgsm
+from our_modules.eval_tools import get_osr_targets as _get_osr_targets
+
 
 mean = (0.4914, 0.4822, 0.4465)
 std = (0.2023, 0.1994, 0.2010)
@@ -110,7 +112,7 @@ def get_avg_csr_acc_across_splits(path_to_pretrained_weights_folder, device, tin
 # ----------
 
 def get_osr_targets(csr_targets, split_num):
-    return (~(sum(csr_targets == i for i in splits[split_num]).bool()))
+    return _get_osr_targets(csr_targets, splits[split_num])
 
 def get_osr_dataloader_for_split(split_num, tin_val_root_dir, batch_size=100, shuffle=False): 
     dataset = TinyImageNet(root=tin_val_root_dir, transform=test_transform)
@@ -123,7 +125,7 @@ def evaluate_osr_auroc(model, dataloader, split_num, device, logdir=None, adv_at
     all_logits = []
     uq_idxs = []
     for i, (input_batch, target_batch, uq_idxs_for_batch) in enumerate(dataloader):
-        all_csr_targets += target_batch,
+        all_csr_targets += target_batch.tolist()
         input_batch = input_batch.to(device)
         target_batch = get_osr_targets(target_batch, split_num)
         target_batch = target_batch.to(device)
@@ -141,8 +143,8 @@ def evaluate_osr_auroc(model, dataloader, split_num, device, logdir=None, adv_at
         if not os.path.exists(logdir + adv_attack_name + "/"):
             os.mkdir(logdir + adv_attack_name + "/")
         torch.save(torch.cat(all_logits), logdir + adv_attack_name + "/" + "logits_split_" + str(split_num) + ".pt")
-        torch.save(all_csr_targets, logdir + adv_attack_name + "/" + "csr_targets_split_" + str(split_num) + ".pt")
-        torch.save(uq_idxs, logdir + adv_attack_name + "/" "uq_idxs_split_" + str(split_num) + ".pt")
+        torch.save(torch.tensor(all_csr_targets), logdir + adv_attack_name + "/" + "csr_targets_split_" + str(split_num) + ".pt")
+        torch.save(torch.tensor(uq_idxs), logdir + adv_attack_name + "/" "uq_idxs_split_" + str(split_num) + ".pt")
 
     return roc_auc_score(targets, mls_scores)
 
