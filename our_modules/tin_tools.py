@@ -118,7 +118,7 @@ def get_osr_dataloader_for_split(split_num, tin_val_root_dir, batch_size=100, sh
     dataset = TinyImageNet(root=tin_val_root_dir, transform=test_transform)
     return DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
 
-def evaluate_osr_auroc(model, dataloader, split_num, device, logdir=None, adv_attack=lambda x, y, model: x, adv_attack_name="plain"):
+def evaluate_osr_auroc(model, dataloader, split_num, device, logdir=None, adv_attack=lambda x, y, model: x):
     targets = []
     all_csr_targets = []
     mls_scores = []
@@ -140,20 +140,20 @@ def evaluate_osr_auroc(model, dataloader, split_num, device, logdir=None, adv_at
         #print(f"{int((i+1)/len(dataloader)*100)}% done")
 
     if logdir is not None:
-        if not os.path.exists(logdir + adv_attack_name + "/"):
-            os.mkdir(logdir + adv_attack_name + "/")
-        torch.save(torch.cat(all_logits), logdir + adv_attack_name + "/" + "logits_split_" + str(split_num) + ".pt")
-        torch.save(torch.tensor(all_csr_targets), logdir + adv_attack_name + "/" + "csr_targets_split_" + str(split_num) + ".pt")
-        torch.save(torch.tensor(uq_idxs), logdir + adv_attack_name + "/" "uq_idxs_split_" + str(split_num) + ".pt")
+        os.makedirs(logdir, exist_ok = True)
+        torch.save(torch.cat(all_logits), logdir + "logits_" + str(split_num) + ".pt")
+        torch.save(torch.tensor(all_csr_targets), logdir + "csr_targets_" + str(split_num) + ".pt")
+        torch.save(torch.tensor(uq_idxs), logdir + "index_" + str(split_num) + ".pt")
 
     return roc_auc_score(targets, mls_scores)
 
-def get_avg_osr_auroc_across_splits(path_to_pretrained_weights_folder, tin_val_root_dir, device, logdir=None, batch_size=100, shuffle=False, adv_attack=lambda x, y, model:x, adv_attack_name='plain'):
+def get_avg_osr_auroc_across_splits(path_to_pretrained_weights_folder, tin_val_root_dir, device, logdir=None, batch_size=100, shuffle=False, 
+                                    adv_attack=lambda x, y, model:x, number_of_splits=5):
     aurocs = []
-    for split_num in tqdm(range(5)):
+    for split_num in tqdm(range(number_of_splits)):
         model = get_model_for_split(split_num, path_to_pretrained_weights_folder, device=device)
         dataloader = get_osr_dataloader_for_split(split_num, tin_val_root_dir, batch_size=batch_size, shuffle=shuffle)
-        auroc = evaluate_osr_auroc(model, dataloader, split_num, device=device, logdir=logdir, adv_attack=adv_attack, adv_attack_name=adv_attack_name)
+        auroc = evaluate_osr_auroc(model, dataloader, split_num, device=device, logdir=logdir, adv_attack=adv_attack)
         aurocs += auroc,
     
     return sum(aurocs)/len(aurocs)
