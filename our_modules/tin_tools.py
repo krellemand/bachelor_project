@@ -40,6 +40,9 @@ test_transform = transforms.Compose([
             transforms.Normalize(mean=mean, std=std),
         ])
 
+# Min and max for image value after test transform is aplied
+transform_range = (-2.4097, 2.7537)
+
 splits = osr_splits['tinyimagenet']
 
 # Load pretrained tiny-imagenet weights into the model for tinyimagenet.
