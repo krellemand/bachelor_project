@@ -107,12 +107,12 @@ def get_equal_len_datasets(dataset1, dataset2):
 
     if len(dataset1) > len(dataset2):
 
-        rand_idxs = np.random.choice(range(len(dataset1)), size=(len(dataset2, )))
+        rand_idxs = np.random.choice(range(len(dataset1)), size=(len(dataset2, )), replace=False)
         subsample_dataset(dataset1, rand_idxs)
 
     elif len(dataset2) > len(dataset1):
 
-        rand_idxs = np.random.choice(range(len(dataset2)), size=(len(dataset1, )))
+        rand_idxs = np.random.choice(range(len(dataset2)), size=(len(dataset1, )), replace=False)
         subsample_dataset(dataset2, rand_idxs)
 
     return dataset1, dataset2
