@@ -66,7 +66,6 @@ def max_logit_change_compared_id_vs_ood(path_plain_logits, path_fn_logits, path_
     split = osr_splits[dataset_name][split_num]
     csr_targets = torch.load(path_csr_targets)
     osr_targets = get_osr_targets(csr_targets, split)
-    print(osr_targets)
     plain_logits = torch.load(path_plain_logits)
     fn_logits = torch.load(path_fn_logits)
     max_logit_plain = torch.amax(plain_logits, dim=1)
