@@ -1,6 +1,7 @@
 from sklearn.metrics import roc_curve, roc_auc_score, accuracy_score, average_precision_score
 import torch
 from data.open_set_splits.osr_splits import osr_splits
+import os
 
 def evaluate_osr(open_set_scores, open_set_labels):
     """
@@ -26,3 +27,18 @@ def load_and_eval_mls_osr(logit_file_path, csr_targets_file_path, split_num, dat
     mls_scores = mls_osr_score(logits)
     open_set_labels = get_osr_targets(csr_targets, split)
     return evaluate_osr(mls_scores, open_set_labels)
+
+def load_and_eval_mls_osr_for_all_eps(path_to_eps_dirs, split_num, dataset_name='tinyimagenet'):
+    eps_dir_list = [dir_name for dir_name in os.listdir(path_to_eps_dirs) if dir_name[:3] == 'eps']
+    eps_list = [float(dir_name[4:]) for dir_name in eps_dir_list]
+    roc_stats = []
+    for dir in eps_dir_list:
+        roc_stat_tuple = load_and_eval_mls_osr(path_to_eps_dirs + dir + '/logits_' + str(split_num) + '.pt',
+                                               path_to_eps_dirs + dir + '/csr_targets_' + str(split_num) + '.pt',
+                                               split_num=split_num,
+                                               dataset_name=dataset_name)
+        roc_stats += roc_stat_tuple,
+    eps_roc = sorted(zip(eps_list, roc_stats), key=lambda x: x[0])
+    eps_list = [eps for eps, _ in eps_roc]
+    roc_stats = [roc_stat for _, roc_stat in eps_roc]
+    return eps_list, roc_stats
