@@ -33,3 +33,5 @@ def fn_osr_fgsm(model, x, eps=0.05, clip_range=(None, None), return_step=False, 
     return fgsm(model, x, torch.zeros(len(x)), eps, lambda y_hat, y: torch.linalg.norm(y_hat, dim=-1, ord=norm_ord), 
                 clip_range=clip_range, return_step=return_step)
 
+
+
