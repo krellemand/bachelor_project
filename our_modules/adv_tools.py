@@ -1,6 +1,9 @@
 import torch
 import os
 
+def log_msp_loss(y_hat, y):
+    return torch.log(torch.amax(torch.exp(y_hat), dim=-1)/torch.sum(torch.exp(y_hat), dim=-1))
+
 def fgsm(model, xs, ys, eps, loss_func, clip_range=(None, None), return_step=False):
     if len(xs.shape) == 3:
         xs.requires_grad = True
@@ -39,8 +42,7 @@ def fp_osr_fgsm_sum_exp(model, x, eps=0.05, clip_range=(None, None), return_step
                 clip_range=clip_range, return_step=return_step)
 
 def fn_osr_fgsm_log_msp(model, x, eps=0.05, clip_range=(None, None), return_step=False):
-    loss = lambda y_hat, y: torch.log(torch.amax(torch.exp(y_hat), dim=-1)/torch.sum(torch.exp(y_hat), dim=-1))
-    return fgsm(model, x, torch.zeros(len(x)), eps, loss, 
+    return fgsm(model, x, torch.zeros(len(x)), eps, log_msp_loss, 
                 clip_range=clip_range, return_step=return_step)
 
 def save_grad_norms(loss_func, model, dataloader, logdir, device, split_num, **norm_kwargs):
@@ -60,12 +62,12 @@ def save_grad_norms(loss_func, model, dataloader, logdir, device, split_num, **n
             loss = loss_func(model(x[None]), y)
             loss.backward()
             x_grad = x.grad
-            grad_norm = torch.linalg.norm(x_grad, dim=-1, **norm_kwargs)
-            grad_norms.append(grad_norms)
+            grad_norm = torch.linalg.norm(torch.flatten(x_grad), **norm_kwargs)
+            grad_norms.append(grad_norm)
     
     if logdir is not None:
         os.makedirs(logdir, exist_ok = True)
-        torch.save(torch.cat(grad_norms), logdir + "grad_norms_" + str(split_num) + ".pt")
+        torch.save(torch.tensor(grad_norms), logdir + "grad_norms_" + str(split_num) + ".pt")
         torch.save(torch.tensor(csr_targets), logdir + "csr_targets_" + str(split_num) + ".pt")
         torch.save(torch.tensor(uq_idxs), logdir + "index_" + str(split_num) + ".pt")
             

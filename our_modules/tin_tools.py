@@ -26,6 +26,7 @@ from data.open_set_splits.osr_splits import osr_splits
 
 # imports from our modules
 from our_modules.adv_tools import fgsm, fn_osr_fgsm, fp_osr_fgsm
+from our_modules.adv_tools import save_grad_norms
 from our_modules.eval_tools import get_osr_targets as _get_osr_targets
 
 
@@ -139,7 +140,12 @@ def get_avg_osr_auroc_across_splits(path_to_pretrained_weights_folder, tin_val_r
     
     return sum(aurocs)/len(aurocs)
 
-# def save_grad_norms_across_splits(logdir, loss_func, device)
+def save_grad_norms_across_splits(path_to_pretrained_weights_folder, tin_val_root_dir, logdir, loss_func, device, number_of_splits=5):
+    for split_num in tqdm(range(number_of_splits)):
+        model = get_model_for_split(split_num, path_to_pretrained_weights_folder, device=device)
+        dataloader = get_osr_dataloader_for_split(split_num, tin_val_root_dir, batch_size=100, shuffle=False)
+        save_grad_norms(loss_func, model, dataloader, logdir, device, split_num, ord = 1)
+
 
 #####################
 # ADVERSARIAL STUFF #
