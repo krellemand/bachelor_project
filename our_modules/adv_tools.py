@@ -42,4 +42,18 @@ def fn_osr_fgsm_log_msp(model, x, eps=0.05, clip_range=(None, None), return_step
     return fgsm(model, x, torch.zeros(len(x)), eps, loss, 
                 clip_range=clip_range, return_step=return_step)
 
-def save_grads()
+def save_grad_norms(loss_func, model, dataloader, logdir, device):
+    model = model.to(device)
+    
+    for input_batch, target_batch, uq_idx in dataloader:
+        input_batch = input_batch.to(device)
+        target_batch = target_batch.to(device)
+
+        grad_norms = []
+
+        for x, y in zip(input_batch, target_batch):
+            x.requires_grad = True
+            loss = loss_func(model(x[None]), y)
+            loss.backward()
+            
+
