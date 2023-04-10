@@ -58,28 +58,6 @@ def get_model_for_split(split_num, path_to_pretrained_weights_folder, device):
     model.eval()
 
     return model
-
-# Load in the tiny-imagenet-200 datasets and put them into dataloaders
-# def plot_image_i(i, dataset, mean, std):
-#     img, label, uq_idx = dataset[i]
-#     # Unnormalize
-#     img = img*np.array(std)[:, None, None] + np.array(mean)[:, None, None]
-    
-#     # The image is clipped due to numerical imprecision.
-#     plt.imshow(np.clip(img.permute(1,2,0).numpy(), 0.0, 1.0))
-#     print(label, uq_idx)
-#     plt.show()
-
-# def plot_image_on_ax(ax, normalized_img, mean, std):
-#     if normalized_img.requires_grad:
-#         normalized_img = normalized_img.detach()
-#     img = normalized_img*np.array(std)[:, None, None] + np.array(mean)[:, None, None]
-#     ax.imshow(np.clip(img.permute(1,2,0).numpy(), 0.0, 1.0))
-
-# def plot_image(normalized_img, mean, std):
-#     fig, ax = plt.subplots(1,1, figsize=(5,5))
-#     plot_image_on_ax(ax, normalized_img, mean=mean, std=std)
-#     plt.show()
  
 def get_csr_dataloader_for_split(split_num, dataset, batch_size=100, shuffle=False):
     tiny_img_net_split = splits[split_num] 

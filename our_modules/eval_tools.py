@@ -89,3 +89,4 @@ def max_logit_change_compared_id_vs_ood(path_plain_logits, path_fn_logits, path_
     id_diffs = [diff for diff, target in zip(diffs, osr_targets) if not target]
     ood_diffs = [diff for diff, target in zip(diffs, osr_targets) if target]
     return id_diffs, ood_diffs
+
