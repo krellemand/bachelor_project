@@ -90,3 +90,19 @@ def max_logit_change_compared_id_vs_ood(path_plain_logits, path_fn_logits, path_
     ood_diffs = [diff for diff, target in zip(diffs, osr_targets) if target]
     return id_diffs, ood_diffs
 
+def get_grad_norm_stats(path_grad_norms, path_plain_logits, split_num, dataset_name='tinyimagenet', score_func=lambda x:torch.amax(x), dim=-1):
+    split = osr_splits[dataset_name][split_num]
+
+    csr_targets = torch.load(path_grad_norms + 'csr_targets_' + split + '.pt')
+    osr_targets = get_osr_targets(csr_targets, split)
+
+    plain_logits = torch.load(path_plain_logits)
+    osr_scores = score_func(plain_logits)
+
+    grad_norms = torch.load(path_grad_norms)
+
+    id_grad_norms = [(grad_norm, osr_score) for grad_norm, osr_score, target in zip(grad_norms, osr_scores, osr_targets) if not target]
+    ood_grad_norms = [(grad_norm, osr_score) for grad_norm, osr_score, target in zip(grad_norms, osr_scores, osr_targets) if target]
+
+    return id_grad_norms, ood_grad_norms
+
