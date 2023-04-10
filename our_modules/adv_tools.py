@@ -1,4 +1,5 @@
 import torch
+import os
 
 def fgsm(model, xs, ys, eps, loss_func, clip_range=(None, None), return_step=False):
     if len(xs.shape) == 3:
@@ -42,18 +43,31 @@ def fn_osr_fgsm_log_msp(model, x, eps=0.05, clip_range=(None, None), return_step
     return fgsm(model, x, torch.zeros(len(x)), eps, loss, 
                 clip_range=clip_range, return_step=return_step)
 
-def save_grad_norms(loss_func, model, dataloader, logdir, device):
+def save_grad_norms(loss_func, model, dataloader, logdir, device, split_num, **norm_kwargs):
     model = model.to(device)
-    
+    grad_norms = []
+    csr_targets = []
+    uq_idxs = []
+
     for input_batch, target_batch, uq_idx in dataloader:
         input_batch = input_batch.to(device)
         target_batch = target_batch.to(device)
-
-        grad_norms = []
+        csr_targets += target_batch.tolist()
+        uq_idxs += uq_idx.tolist()
 
         for x, y in zip(input_batch, target_batch):
             x.requires_grad = True
             loss = loss_func(model(x[None]), y)
             loss.backward()
+            x_grad = x.grad
+            grad_norm = torch.linalg.norm(x_grad, dim=-1, **norm_kwargs)
+            grad_norms.append(grad_norms)
+    
+    if logdir is not None:
+        os.makedirs(logdir, exist_ok = True)
+        torch.save(torch.cat(grad_norms), logdir + "grad_norms_" + str(split_num) + ".pt")
+        torch.save(torch.tensor(csr_targets), logdir + "csr_targets_" + str(split_num) + ".pt")
+        torch.save(torch.tensor(uq_idxs), logdir + "index_" + str(split_num) + ".pt")
+            
             
 

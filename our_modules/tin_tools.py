@@ -139,6 +139,8 @@ def get_avg_osr_auroc_across_splits(path_to_pretrained_weights_folder, tin_val_r
     
     return sum(aurocs)/len(aurocs)
 
+# def save_grad_norms_across_splits(logdir, loss_func, device)
+
 #####################
 # ADVERSARIAL STUFF #
 #####################
