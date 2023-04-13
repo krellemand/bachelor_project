@@ -104,11 +104,16 @@ class EpsExperimentPlot():
             plt.savefig(save_path, transparent=True, bbox_inches='tight')
 
 class GradNormPlot():
-    def __init__(self, path_grad_norms, path_plain_logits, split_num, dataset_name='tinyimagenet', score_func=lambda x:torch.amax(x, dim=-1)):
+    def __init__(self, path_grad_norms, path_plain_logits, split_num, dataset_name='tinyimagenet', score_func=lambda x:torch.amax(x, dim=-1), balance=True):
         self.fig = None
         self.ax = None
 
         id_stats, ood_stats = get_grad_norm_stats(path_grad_norms, path_plain_logits, split_num, dataset_name, score_func)
+        id_stats = sorted(id_stats, key=lambda x: x[1])
+        ood_stats = sorted(ood_stats, key=lambda x: x[1])
+        if balance:
+            selected_idxs = np.random.choice(len(ood_stats), len(id_stats), replace=False)
+            ood_stats = [stat for i, stat in enumerate(ood_stats) if i in selected_idxs]
         self.id_grad_norms = [gn for gn, _ in id_stats]
         self.id_osr_scores = [s for _, s in id_stats]
         self.ood_grad_norms = [gn for gn, _ in ood_stats]
@@ -117,6 +122,26 @@ class GradNormPlot():
     def make_boxplot(self, figsize=(6,6), **boxplot_kwargs):
         self.fig, self.ax = plt.subplots(1,1, figsize=figsize)
         self.ax.boxplot((self.id_grad_norms, self.ood_grad_norms), **boxplot_kwargs)
+
+    def make_scatter_plot(self, window_size=5,figsize=(6,6), xlabel=r'$\mathcal{S}$ - Maximum Logit Score (MLS)', ylabel=r'Gradient Norm - $\mathbb{E}\:\left[||\:\nabla_{\bf{x}} \log S_{\hat{y}}({\bf{x}}) \:||_1 \mid \mathcal{S}\:\right]$'):
+        self.fig, self.ax = plt.subplots(1,1, figsize=figsize)
+        self.ax.scatter(self.id_osr_scores, self.id_grad_norms, alpha=0.2, c='cornflowerblue')
+        self.ax.scatter(self.ood_osr_scores, self.ood_grad_norms, alpha=0.2, c='salmon')
+        id_scores_vs_means = [(score, np.mean(self.id_grad_norms[max(i-window_size, 0):i + window_size + 1])) \
+                              for i, score in enumerate(self.id_osr_scores)]
+        ood_scores_vs_means = [(score, np.mean(self.ood_grad_norms[max(i-window_size, 0):i + window_size + 1])) \
+                              for i, score in enumerate(self.ood_osr_scores)]
+        id_scores, id_means = list(zip(*id_scores_vs_means))
+        ood_scores, ood_means = list(zip(*ood_scores_vs_means))
+        self.ax.plot(id_scores, id_means, label='ID')
+        self.ax.plot(ood_scores, ood_means, label='OOD', c='red')
+        self.ax.set_xlabel(xlabel)
+        self.ax.set_ylabel(ylabel)
+
+
+    # def make_conditional_mean_plot(self, figsize=(6,6), **plot_kwargs):
+    def set_legend(self):
+        self.ax.legend()
 
     def show_and_save(self, save_path=False):
         plt.show()
