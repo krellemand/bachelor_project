@@ -6,6 +6,7 @@ import torch
 
 from our_modules.eval_tools import load_and_eval_mls_osr_for_all_eps
 from our_modules.eval_tools import get_grad_norm_stats
+from our_modules.eval_tools import max_logit_change_compared_id_vs_ood
 
 def plot_roc(ax, roc_stats, **plt_kwargs):
     fprs, tprs, thresholds = roc_stats
@@ -103,34 +104,51 @@ class EpsExperimentPlot():
         if save_path:
             plt.savefig(save_path, transparent=True, bbox_inches='tight')
 
-class GradNormPlot():
-    def __init__(self, path_grad_norms, path_plain_logits, split_num, dataset_name='tinyimagenet', score_func=lambda x:torch.amax(x, dim=-1), balance=True):
+class IdOodPlot():
+    def __init__(self):
         self.fig = None
         self.ax = None
-
+        self.id_ys = None
+        self.id_xs = None
+        self.ood_ys = None
+        self.ood_xs = None
+    
+    def load_grad_norm_stats(self, path_grad_norms, path_plain_logits, split_num, dataset_name='tinyimagenet', score_func=lambda x:torch.amax(x, dim=-1), balance=True):
         id_stats, ood_stats = get_grad_norm_stats(path_grad_norms, path_plain_logits, split_num, dataset_name, score_func)
         id_stats = sorted(id_stats, key=lambda x: x[1])
         ood_stats = sorted(ood_stats, key=lambda x: x[1])
         if balance:
             selected_idxs = np.random.choice(len(ood_stats), len(id_stats), replace=False)
             ood_stats = [stat for i, stat in enumerate(ood_stats) if i in selected_idxs]
-        self.id_grad_norms = [gn for gn, _ in id_stats]
-        self.id_osr_scores = [s for _, s in id_stats]
-        self.ood_grad_norms = [gn for gn, _ in ood_stats]
-        self.ood_osr_scores = [s for _, s in ood_stats]
+        self.id_ys = [gn for gn, _ in id_stats]
+        self.id_xs = [s for _, s in id_stats]
+        self.ood_ys = [gn for gn, _ in ood_stats]
+        self.ood_xs = [s for _, s in ood_stats]
+
+    def load_mls_diffs_stats(self, path_plain_logits, path_fn_logits, path_csr_targets, split_num, dataset_name='tinyimagenet', balance=True):
+        id_stats, ood_stats = max_logit_change_compared_id_vs_ood(path_plain_logits, path_fn_logits, path_csr_targets, split_num, dataset_name='tinyimagenet')
+        id_stats = sorted(id_stats, key=lambda x: x[1])
+        ood_stats = sorted(ood_stats, key=lambda x: x[1])
+        if balance:
+            selected_idxs = np.random.choice(len(ood_stats), len(id_stats), replace=False)
+            ood_stats = [stat for i, stat in enumerate(ood_stats) if i in selected_idxs]
+        self.id_ys = [gn for gn, _ in id_stats]
+        self.id_xs = [s for _, s in id_stats]
+        self.ood_ys = [gn for gn, _ in ood_stats]
+        self.ood_xs = [s for _, s in ood_stats]
 
     def make_boxplot(self, figsize=(6,6), **boxplot_kwargs):
         self.fig, self.ax = plt.subplots(1,1, figsize=figsize)
-        self.ax.boxplot((self.id_grad_norms, self.ood_grad_norms), **boxplot_kwargs)
+        self.ax.boxplot((self.id_ys, self.ood_ys), **boxplot_kwargs)
 
     def make_scatter_plot(self, window_size=5,figsize=(6,6), xlabel=r'$\mathcal{S}$ - Maximum Logit Score (MLS)', ylabel=r'Gradient Norm - $\mathbb{E}\:\left[||\:\nabla_{\bf{x}} \log S_{\hat{y}}({\bf{x}}) \:||_1 \mid \mathcal{S}\:\right]$'):
         self.fig, self.ax = plt.subplots(1,1, figsize=figsize)
-        self.ax.scatter(self.id_osr_scores, self.id_grad_norms, alpha=0.2, c='cornflowerblue')
-        self.ax.scatter(self.ood_osr_scores, self.ood_grad_norms, alpha=0.2, c='salmon')
-        id_scores_vs_means = [(score, np.mean(self.id_grad_norms[max(i-window_size, 0):i + window_size + 1])) \
-                              for i, score in enumerate(self.id_osr_scores)]
-        ood_scores_vs_means = [(score, np.mean(self.ood_grad_norms[max(i-window_size, 0):i + window_size + 1])) \
-                              for i, score in enumerate(self.ood_osr_scores)]
+        self.ax.scatter(self.id_xs, self.id_ys, alpha=0.2, c='cornflowerblue')
+        self.ax.scatter(self.ood_xs, self.ood_ys, alpha=0.2, c='salmon')
+        id_scores_vs_means = [(score, np.mean(self.id_ys[max(i-window_size, 0):i + window_size + 1])) \
+                              for i, score in enumerate(self.id_xs)][window_size:-window_size]
+        ood_scores_vs_means = [(score, np.mean(self.ood_ys[max(i-window_size, 0):i + window_size + 1])) \
+                              for i, score in enumerate(self.ood_xs)][window_size:-window_size]
         id_scores, id_means = list(zip(*id_scores_vs_means))
         ood_scores, ood_means = list(zip(*ood_scores_vs_means))
         self.ax.plot(id_scores, id_means, label='ID')
