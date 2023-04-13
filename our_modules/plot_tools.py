@@ -178,5 +178,5 @@ def plot_diff_stats_for_eps(path_plain_logits, path_to_attack_folder, path_csr_t
     ax.fill_between(eps_list, ood_q1, ood_q3, color='salmon', alpha=0.2)
     ax.legend()
     ax.set_xlabel('$\\epsilon$ - the size of the advesarial perturbation.')
-    ax.set_ylabel(r'Signed Maximum Logit Change - $\hat{z}_{after} - \hat{z}_{before}$')
+    ax.set_ylabel(r'Signed Maximum Logit Change; $\hat{z}_{after} - \hat{z}_{before}$')
     plt.show()
