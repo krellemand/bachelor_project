@@ -1,6 +1,7 @@
 from sklearn.metrics import roc_curve, roc_auc_score, accuracy_score, average_precision_score
 import torch
 from data.open_set_splits.osr_splits import osr_splits
+import numpy as np
 import os
 import random
 
@@ -106,3 +107,23 @@ def get_grad_norm_stats(path_grad_norms, path_plain_logits, split_num, dataset_n
 
     return id_grad_norms, ood_grad_norms
 
+def get_diff_stats_for_eps(path_plain_logits, path_to_attack_folder, path_csr_targets, split_num=0, dataset_name='tinyimagenet'):
+    dirs = os.listdir(path_to_attack_folder)
+    eps_list = []
+    id_box_list = []
+    ood_box_list = []
+    for name in dirs:
+        eps_list.append(float(name[4:]))
+        id_stats, ood_stats = max_logit_change_compared_id_vs_ood(path_plain_logits, 
+                                            path_to_attack_folder + name + '/logits_' + str(split_num) + '.pt',
+                                            path_csr_targets,
+                                            split_num=split_num,
+                                            dataset_name=dataset_name)
+        id_diffs, _ = list(zip(*id_stats))
+        ood_diffs, _ = list(zip(*ood_stats))
+        id_box_stats = np.quantile(id_diffs,[0.25, 0.5, 0.75])
+        ood_box_stats = np.quantile(ood_diffs,[0.25, 0.5, 0.75])
+        id_box_list.append(id_box_stats)
+        ood_box_list.append(ood_box_stats)
+    sorted_zip = sorted(zip(eps_list, id_box_list, ood_box_list), key=lambda x: x[0])
+    return list(zip(*sorted_zip))

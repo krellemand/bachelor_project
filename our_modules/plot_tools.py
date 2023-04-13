@@ -7,6 +7,7 @@ import torch
 from our_modules.eval_tools import load_and_eval_mls_osr_for_all_eps
 from our_modules.eval_tools import get_grad_norm_stats
 from our_modules.eval_tools import max_logit_change_compared_id_vs_ood
+from our_modules.eval_tools import get_diff_stats_for_eps
 
 def plot_roc(ax, roc_stats, **plt_kwargs):
     fprs, tprs, thresholds = roc_stats
@@ -38,7 +39,7 @@ def plot_image_i(i, dataset, mean, std, **plt_kwargs):
 
 
 class EpsExperimentPlot():
-    def __init__(self, eps_figsize=(10,4), adv_figsize=(15,6), which_lines='both', add_zoom=(-0.003, 0.012, 0.825, 0.84)):
+    def __init__(self, eps_figsize=(10,4), adv_fisize=(15,6), which_lines='both', add_zoom=(-0.003, 0.012, 0.825, 0.84)):
         self.which_lines = which_lines
         self.add_zoom = add_zoom
         eps_fig, eps_ax = plt.subplots(1,1, figsize=eps_figsize)
@@ -126,7 +127,7 @@ class IdOodPlot():
         self.ood_xs = [s for _, s in ood_stats]
 
     def load_mls_diffs_stats(self, path_plain_logits, path_fn_logits, path_csr_targets, split_num, dataset_name='tinyimagenet', balance=True):
-        id_stats, ood_stats = max_logit_change_compared_id_vs_ood(path_plain_logits, path_fn_logits, path_csr_targets, split_num, dataset_name='tinyimagenet')
+        id_stats, ood_stats = max_logit_change_compared_id_vs_ood(path_plain_logits, path_fn_logits, path_csr_targets, split_num, dataset_name=dataset_name)
         id_stats = sorted(id_stats, key=lambda x: x[1])
         ood_stats = sorted(ood_stats, key=lambda x: x[1])
         if balance:
@@ -156,7 +157,6 @@ class IdOodPlot():
         self.ax.set_xlabel(xlabel)
         self.ax.set_ylabel(ylabel)
 
-
     # def make_conditional_mean_plot(self, figsize=(6,6), **plot_kwargs):
     def set_legend(self):
         self.ax.legend()
@@ -165,3 +165,18 @@ class IdOodPlot():
         plt.show()
         if save_path:
             plt.savefig(save_path, transparent=True, bbox_inches='tight')
+
+
+def plot_diff_stats_for_eps(path_plain_logits, path_to_attack_folder, path_csr_targets, split_num=0, dataset_name='tinyimagenet', figsize = (6,6)):
+    eps_list, id_stats, ood_stats = get_diff_stats_for_eps(path_plain_logits, path_to_attack_folder, path_csr_targets, split_num=split_num, dataset_name=dataset_name)
+    id_q1, id_q2, id_q3 = list(zip(*id_stats))
+    ood_q1, ood_q2, ood_q3 = list(zip(*ood_stats))
+    fig, ax = plt.subplots(1,1, figsize=figsize)
+    ax.plot(eps_list, id_q2, label='ID', c='b')
+    ax.fill_between(eps_list, id_q1, id_q3, color='cornflowerblue', alpha=0.2)
+    ax.plot(eps_list, ood_q2, label='OOD', c='r')
+    ax.fill_between(eps_list, ood_q1, ood_q3, color='salmon', alpha=0.2)
+    ax.legend()
+    ax.set_xlabel('$\\epsilon$ - the size of the advesarial perturbation.')
+    ax.set_ylabel(r'Signed Maximum Logit Change - $\hat{z}_{after} - \hat{z}_{before}$')
+    plt.show()
