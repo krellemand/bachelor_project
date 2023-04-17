@@ -167,7 +167,7 @@ class IdOodPlot():
             plt.savefig(save_path, transparent=True, bbox_inches='tight')
 
 
-def plot_diff_stats_for_eps(path_plain_logits, path_to_attack_folder, path_csr_targets, split_num=0, dataset_name='tinyimagenet', figsize = (6,6)):
+def plot_diff_stats_for_eps(path_plain_logits, path_to_attack_folder, path_csr_targets, split_num=0, dataset_name='tinyimagenet', figsize = (6,6), highlight_eps_idx=5):
     eps_list, id_stats, ood_stats = get_diff_stats_for_eps(path_plain_logits, path_to_attack_folder, path_csr_targets, split_num=split_num, dataset_name=dataset_name)
     id_q1, id_q2, id_q3 = list(zip(*id_stats))
     ood_q1, ood_q2, ood_q3 = list(zip(*ood_stats))
@@ -176,7 +176,8 @@ def plot_diff_stats_for_eps(path_plain_logits, path_to_attack_folder, path_csr_t
     ax.fill_between(eps_list, id_q1, id_q3, color='cornflowerblue', alpha=0.2)
     ax.plot(eps_list, ood_q2, label='OOD', c='r')
     ax.fill_between(eps_list, ood_q1, ood_q3, color='salmon', alpha=0.2)
+    ax.axvline(eps_list[highlight_eps_idx], 0, 1, linestyle='dashed', c='gray', alpha=0.5, label=f'$\epsilon$ = {eps_list[highlight_eps_idx]:.2}')
     ax.legend()
     ax.set_xlabel('$\\epsilon$ - the size of the advesarial perturbation.')
-    ax.set_ylabel(r'Signed Maximum Logit Change; $\hat{z}_{after} - \hat{z}_{before}$')
+    ax.set_ylabel(r'Signed Maximum Logit Change;  $\mathcal{S}_{adv} - \mathcal{S}$')
     plt.show()

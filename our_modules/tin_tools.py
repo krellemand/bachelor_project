@@ -147,6 +147,20 @@ def save_grad_norms_across_splits(path_to_pretrained_weights_folder, tin_val_roo
         save_grad_norms(loss_func, model, dataloader, logdir, device, split_num, ord = 1)
 
 
+def save_informed_attack(logdir, path_to_fn_attack, path_to_fp_attack, split_num):
+    fn_logits = torch.load(path_to_fn_attack + 'logits_' + str(split_num) + '.pt')
+    fp_logits = torch.load(path_to_fp_attack + 'logits_' + str(split_num) + '.pt')
+    csr_targets = torch.load(path_to_fn_attack + 'csr_targets_' + str(split_num) + '.pt')
+    osr_targets = get_osr_targets(csr_targets, split_num)
+    informed_mls = [fn_logits[i][None] if osr_targets[i] else fp_logits[i][None] for i in range(len(osr_targets))]
+    print(informed_mls)
+    os.makedirs(logdir, exist_ok = True)
+    torch.save(torch.cat(informed_mls), logdir + "logits_" + str(split_num) + ".pt")
+    torch.save(csr_targets, logdir + "csr_targets_" + str(split_num) + ".pt")
+
+    
+
+
 #####################
 # ADVERSARIAL STUFF #
 #####################
