@@ -32,14 +32,14 @@ def mls_osr_score(logits):
 def get_osr_targets(csr_targets, split_targets):
     return (~(sum(csr_targets == i for i in split_targets).bool()))
 
-def eval_osr(osr_scores, osr_targets, balance=True, return_avg_mls=False):
-    # print((sum(open_set_labels)/len(open_set_labels)).data) # Balance ratio before
+def eval_osr(osr_scores, osr_targets, balance=True, return_avg_score=False):
+    # print((sum(osr_targets)/len(osr_targets)).data) # Balance ratio before
     if balance:
         score_label_zipped = balance_binary(zip(osr_scores.tolist(), osr_targets.tolist()), lambda x: bool(x[1]))
         osr_scores, osr_targets = (torch.tensor([mls for mls, _ in score_label_zipped ]), 
                                        [osr_target for _, osr_target in score_label_zipped])
-    # print(sum(open_set_labels)/len(open_set_labels)) # Balance ratio after
-    if return_avg_mls:
+    # print(sum(osr_targets)/len(osr_targets)) # Balance ratio after
+    if return_avg_score:
         return osr_roc_stats(osr_scores, osr_targets), -torch.mean(osr_scores)
     return osr_roc_stats(osr_scores, osr_targets)
 
@@ -50,7 +50,7 @@ def load_and_eval_mls_osr(logit_file_path, csr_targets_file_path, split_num, dat
     csr_targets = torch.load(csr_targets_file_path)
     mls_scores = mls_osr_score(logits)
     open_set_labels = get_osr_targets(csr_targets, split)
-    return eval_osr(mls_scores, open_set_labels, balance=balance, return_avg_mls=return_avg_mls)
+    return eval_osr(mls_scores, open_set_labels, balance=balance, return_avg_score=return_avg_mls)
 
 # def load_and_eval_mls_osr(logit_file_path, csr_targets_file_path, split_num, dataset_name='tinyimagenet', balance=False, return_avg_mls=False):
 #     assert int(logit_file_path[-4]) == split_num, "The split_num does not correspond to the split num of the file name"
@@ -102,7 +102,7 @@ def load_and_eval_mls_osr_for_all_eps(path_to_eps_dirs, split_num, dataset_name=
 
 def load_and_eval_logit_change_score(plain_logit_file_path, adv_logit_file_path, csr_targets_file_path, split_num,
                                      similarity_func=lambda after, before: torch.amax(after, dim=-1) - torch.amax(before, dim=-1),
-                                     dataset_name='tinyimagenet', balance=True, return_avg_mls=False):
+                                     dataset_name='tinyimagenet', balance=True, return_avg_score=False):
     assert int(plain_logit_file_path[-4]) == split_num, "The split_num does not correspond to the split num of the file name"
     split = osr_splits[dataset_name][split_num]
     plain_logits = torch.load(plain_logit_file_path)
@@ -110,7 +110,7 @@ def load_and_eval_logit_change_score(plain_logit_file_path, adv_logit_file_path,
     similarity_scores = similarity_func(adv_logits, plain_logits)
     csr_targets = torch.load(csr_targets_file_path)
     osr_targets = get_osr_targets(csr_targets, split)
-    return eval_osr(similarity_scores, osr_targets, balance=balance, return_avg_mls=return_avg_mls)
+    return eval_osr(similarity_scores, osr_targets, balance=balance, return_avg_score=return_avg_score)
 
 def load_and_eval_logit_change_scores_for_all_eps(path_to_eps_dirs, path_to_plain_logit_file, split_num, similarity_func=lambda after, before: torch.amax(after, dim=-1) - torch.amax(before, dim=-1), dataset_name='tinyimagenet', balance=True, return_avg_score=False):
     eps_dir_list = [dir_name for dir_name in os.listdir(path_to_eps_dirs) if dir_name[:3] == 'eps']
@@ -122,7 +122,10 @@ def load_and_eval_logit_change_scores_for_all_eps(path_to_eps_dirs, path_to_plai
                                                  path_to_eps_dirs + dir + '/logits_' + str(split_num) + '.pt', 
                                                  path_to_eps_dirs + dir + '/csr_targets_' + str(split_num) + '.pt',
                                                  split_num=split_num,
-                                                 similarity_func=similarity_func)
+                                                 similarity_func=similarity_func,
+                                                 return_avg_score=return_avg_score,
+                                                 balance=balance,
+                                                 dataset_name=dataset_name)
         if return_avg_score:
             roc_stat_tuple, avg_score = stats
             avg_score_list += avg_score,

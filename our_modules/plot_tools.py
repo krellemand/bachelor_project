@@ -68,27 +68,22 @@ class EpsExperimentPlot():
 
     def load_logit_change_stats(self, path_to_eps_dirs, path_to_plain_logit_file, split_num, similarity_func=lambda after, before: torch.amax(after, dim=-1) - torch.amax(before, dim=-1), balance=True, dataset_name='tinyimagenet'):
         self.eps, self.roc_stats, self.avg_scores = load_and_eval_logit_change_scores_for_all_eps(path_to_eps_dirs, path_to_plain_logit_file, split_num, similarity_func=similarity_func, dataset_name=dataset_name, balance=balance, return_avg_score=True)
-
     def add_to_eps_plot(self, label_suffix='', **plt_kwargs):
         aurocs = [x[1] for x in self.roc_stats]
         self.recent_eps = self.eps
         if self.which_lines == 'both':
             self.ax1.plot(self.eps, aurocs, c='red', label='AUROC' + label_suffix)
-            # self.ax1.scatter(eps, aurocs, c='red', marker='.')
             if self.add_zoom:
                 self.axins.plot(self.eps, aurocs, c='red')
             self.ax2.plot(self.eps, self.avg_scores, c='blue', label='Average OSR Score' + label_suffix)
-            # self.ax2.scatter(eps, avg_mls, c='blue', marker='.')
             if self.add_zoom:
                 self.axins.plot(self.eps, self.avg_scores, c='blue')
         if self.which_lines == 'AUROC':
             self.ax1.plot(self.eps, aurocs, label='AUROC' + label_suffix, **plt_kwargs)
-            # self.ax1.scatter(eps, aurocs, c='red', marker='.')
             if self.add_zoom:
                 self.axins.plot(self.eps, aurocs, **plt_kwargs)
         if self.which_lines == 'mls':
             self.ax2.plot(self.eps, self.avg_scores, label='Average OSR Score' + label_suffix, **plt_kwargs)
-            # self.ax2.scatter(eps, avg_mls, c='blue', marker='.')
             if self.add_zoom:
                 self.axins.plot(self.eps, aurocs, **plt_kwargs)
         if self.add_zoom:
@@ -102,12 +97,11 @@ class EpsExperimentPlot():
         self.add_to_eps_plot(label_suffix=label_suffix, **plt_kwargs)
 
     def load_and_add_logit_change_to_eps_plot(self, path_to_eps_dirs, path_to_plain_logit_file, split_num, 
-                                              similarity_func=lambda after, 
-                                              before: torch.amax(after, dim=-1) - torch.amax(before, dim=-1), 
-                                              balance=True, dataset_name='tinyimagenet', **plt_kwargs):
+                                              similarity_func=lambda after, before: torch.amax(after, dim=-1) - torch.amax(before, dim=-1), 
+                                              balance=True, label_suffix='', dataset_name='tinyimagenet', **plt_kwargs):
         self.load_logit_change_stats(path_to_eps_dirs, path_to_plain_logit_file, split_num, similarity_func=similarity_func, 
                                      balance=balance, dataset_name=dataset_name)
-        self.add_to_eps_plot(self, label_suffix='', **plt_kwargs)
+        self.add_to_eps_plot(label_suffix, **plt_kwargs)
 
     def set_legend_and_highlight_eps(self, eps_idxs=[], legend_loc=(0.72,0.8)):
         for i in eps_idxs:
