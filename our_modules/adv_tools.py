@@ -41,6 +41,10 @@ def fp_osr_fgsm_sum_exp(model, x, eps=0.05, clip_range=(None, None), return_step
     return fgsm(model, x, torch.zeros(len(x)), -eps, lambda y_hat, y: torch.sum(torch.exp(y_hat), dim=-1), 
                 clip_range=clip_range, return_step=return_step)
 
+def fn_osr_fgsm_sum_exp(model, x, eps=0.05, clip_range=(None, None), return_step=False):
+    return fgsm(model, x, torch.zeros(len(x)), eps, lambda y_hat, y: torch.sum(torch.exp(y_hat), dim=-1), 
+                clip_range=clip_range, return_step=return_step)
+
 def fn_osr_fgsm_log_msp(model, x, eps=0.05, clip_range=(None, None), return_step=False):
     return fgsm(model, x, torch.zeros(len(x)), eps, log_msp_loss, 
                 clip_range=clip_range, return_step=return_step)

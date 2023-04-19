@@ -104,11 +104,15 @@ class EpsExperimentPlot():
                                      balance=balance, dataset_name=dataset_name)
         self.add_to_eps_plot(label_suffix, **plt_kwargs)
 
-    def set_legend_and_highlight_eps(self, eps_idxs=[], legend_loc=(0.72,0.8)):
+    def set_legend_and_highlight_eps(self, eps_idxs=[], legend_loc=(0.72,0.8), h_line=False):
         for i in eps_idxs:
-            self.ax1.axvline(round(self.recent_eps[i],2), 0, 1, linestyle='dashed', c='gray', alpha=0.5,)
+            self.ax1.axvline(round(self.recent_eps[i],2), 0, 1, linestyle='dashed', c='gray', alpha=0.5)
             if self.add_zoom:
-                self.axins.axvline(self.recent_eps[i], 0, 1, linestyle='dashed', c='gray', alpha=0.5,)
+                self.axins.axvline(self.recent_eps[i], 0, 1, linestyle='dashed', c='gray', alpha=0.5)
+        if h_line:
+            self.ax1.axhline(h_line, 0, 1, linestyle = 'dashed', c='salmon', alpha=0.5, label='MLS AUROC')
+            if self.add_zoom:
+                self.axins.axhline(h_line, 0, 1, linestyle = 'dashed', c='salmon', alpha=0.5)
         chosen_eps = [self.recent_eps[i] for i in eps_idxs]
         locs, labels = plt.xticks()
         locs = locs[1:-1]

@@ -153,7 +153,6 @@ def save_informed_attack(logdir, path_to_fn_attack, path_to_fp_attack, split_num
     csr_targets = torch.load(path_to_fn_attack + 'csr_targets_' + str(split_num) + '.pt')
     osr_targets = get_osr_targets(csr_targets, split_num)
     informed_mls = [fn_logits[i][None] if osr_targets[i] else fp_logits[i][None] for i in range(len(osr_targets))]
-    print(informed_mls)
     os.makedirs(logdir, exist_ok = True)
     torch.save(torch.cat(informed_mls), logdir + "logits_" + str(split_num) + ".pt")
     torch.save(csr_targets, logdir + "csr_targets_" + str(split_num) + ".pt")
