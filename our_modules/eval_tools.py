@@ -22,12 +22,13 @@ def osr_roc_stats(open_set_scores, open_set_labels):
     an OSR model obtained by evaluating the model on a 
     test set.
     """
+    open_set_scores = -open_set_scores
     fprs, tprs, thresholds = roc_curve(open_set_labels, open_set_scores, drop_intermediate=False)
     auroc = roc_auc_score(open_set_labels, open_set_scores)
     return (fprs, tprs, thresholds), auroc
 
 def mls_osr_score(logits):
-    return -torch.amax(logits, dim=-1) # In theory high osr score corresponds to known class. We however want novel to correspond to label 1 and thus the minus sign.
+    return torch.amax(logits, dim=-1) # In theory high osr score corresponds to known class. We however want novel to correspond to label 1 and thus the minus sign.
 
 def get_osr_targets(csr_targets, split_targets):
     return (~(sum(csr_targets == i for i in split_targets).bool()))
@@ -40,7 +41,7 @@ def eval_osr(osr_scores, osr_targets, balance=True, return_avg_score=False):
                                        [osr_target for _, osr_target in score_label_zipped])
     # print(sum(osr_targets)/len(osr_targets)) # Balance ratio after
     if return_avg_score:
-        return osr_roc_stats(osr_scores, osr_targets), -torch.mean(osr_scores)
+        return osr_roc_stats(osr_scores, osr_targets), torch.mean(osr_scores)
     return osr_roc_stats(osr_scores, osr_targets)
 
 def load_and_eval_mls_osr(logit_file_path, csr_targets_file_path, split_num, dataset_name='tinyimagenet', balance=True, return_avg_mls=False):

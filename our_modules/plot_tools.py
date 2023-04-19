@@ -68,6 +68,7 @@ class EpsExperimentPlot():
 
     def load_logit_change_stats(self, path_to_eps_dirs, path_to_plain_logit_file, split_num, similarity_func=lambda after, before: torch.amax(after, dim=-1) - torch.amax(before, dim=-1), balance=True, dataset_name='tinyimagenet'):
         self.eps, self.roc_stats, self.avg_scores = load_and_eval_logit_change_scores_for_all_eps(path_to_eps_dirs, path_to_plain_logit_file, split_num, similarity_func=similarity_func, dataset_name=dataset_name, balance=balance, return_avg_score=True)
+   
     def add_to_eps_plot(self, label_suffix='', **plt_kwargs):
         aurocs = [x[1] for x in self.roc_stats]
         self.recent_eps = self.eps
