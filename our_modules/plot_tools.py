@@ -211,6 +211,8 @@ def plot_adv_imgs(eps, adv_imgs, adv_steps, mean, std, figsize=(15,10)):
     for i in range(2):
         for j in range(len(adv_imgs)):
             plot_image_on_ax(axs[i, j], img_stack[i, j], mean, std)
-            axs[i, j].set_title((f"$\\epsilon = {eps[j]:.3}$"))
             axs[i, j].axis('off')
+            if i == 0:
+                axs[i, j].set_title((f"$\\epsilon = {eps[j]:.3}$"))
+    fig.tight_layout()
     plt.show()
