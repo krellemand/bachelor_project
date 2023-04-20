@@ -116,7 +116,7 @@ class EpsExperimentPlot():
         chosen_eps = [self.recent_eps[i] for i in eps_idxs]
         locs, labels = plt.xticks()
         locs = locs[1:-1]
-        locs = [l for l in locs if not np.isclose(l, chosen_eps, rtol=0.0, atol=0.05).any()]
+        locs = [l for l in locs if not np.isclose(l, chosen_eps, rtol=0.0, atol=0.2).any()]
         locs += chosen_eps
         plt.xticks([round(l, 2) for l in locs])
         self.fig.legend(loc=legend_loc)
