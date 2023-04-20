@@ -71,7 +71,7 @@ class EpsExperimentPlot():
    
     def add_to_eps_plot(self, label_suffix='', **plt_kwargs):
         aurocs = [x[1] for x in self.roc_stats]
-        self.recent_eps = self.eps
+        self.recent_eps = np.array(self.eps)
         if self.which_lines == 'both':
             self.ax1.plot(self.eps, aurocs, c='red', label='AUROC' + label_suffix)
             if self.add_zoom:
@@ -201,4 +201,16 @@ def plot_diff_stats_for_eps(path_plain_logits, path_to_attack_folder, path_csr_t
     ax.legend()
     ax.set_xlabel('$\\epsilon$ - the size of the advesarial perturbation.')
     ax.set_ylabel(r'Signed Maximum Logit Change;  $\mathcal{S}_{adv} - \mathcal{S}$')
+    plt.show()
+
+def plot_adv_imgs(eps, adv_imgs, adv_steps, mean, std, figsize=(15,10)):
+    img_stack = torch.vstack((adv_imgs[None], adv_steps[None]))
+    fig, axs = plt.subplots(2, len(adv_imgs), figsize=figsize)
+    if len(axs.shape) == 1:
+        axs = axs[:, None]
+    for i in range(2):
+        for j in range(len(adv_imgs)):
+            plot_image_on_ax(axs[i, j], img_stack[i, j], mean, std)
+            axs[i, j].set_title((f"$\\epsilon = {eps[j]:.3}$"))
+            axs[i, j].axis('off')
     plt.show()

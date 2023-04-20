@@ -159,3 +159,15 @@ def save_informed_attack(logdir, path_to_fn_attack, path_to_fp_attack, split_num
     attack_details = {'FN attack path' : path_to_fn_attack, 'FP attack path' : path_to_fp_attack}
     with open(logdir + 'attack_details.json', 'w') as file:
         json.dump(attack_details, file, indent=4)
+
+def perturb_tin_image(eps, img, path_to_pretrained_weights_folder, device, split_num=0, attack=fn_osr_fgsm, **attack_kwargs):
+    model = get_model_for_split(split_num=split_num,
+                                path_to_pretrained_weights_folder=path_to_pretrained_weights_folder,
+                                device=device)
+    adv_img_and_step = [fn_osr_fgsm(model, img.to(device).detach()[None], ep, clip_range=transform_range, return_step=True, **attack_kwargs)
+                       for ep in eps]
+    adv_imgs, adv_steps = list(zip(*adv_img_and_step))
+    # adv_imgs = [print(type(img)) for img in adv_imgs]
+    # adv_steps = [print(type(step)) for step in adv_steps]
+    return torch.cat(adv_imgs), torch.cat(adv_steps)
+    
