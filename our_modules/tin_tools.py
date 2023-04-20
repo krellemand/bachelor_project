@@ -164,10 +164,8 @@ def perturb_tin_image(eps, img, path_to_pretrained_weights_folder, device, split
     model = get_model_for_split(split_num=split_num,
                                 path_to_pretrained_weights_folder=path_to_pretrained_weights_folder,
                                 device=device)
-    adv_img_and_step = [fn_osr_fgsm(model, img.to(device).detach()[None], ep, clip_range=transform_range, return_step=True, **attack_kwargs)
+    adv_img_and_step = [attack(model, img.to(device).detach()[None], ep, clip_range=transform_range, return_step=True, **attack_kwargs)
                        for ep in eps]
     adv_imgs, adv_steps = list(zip(*adv_img_and_step))
-    # adv_imgs = [print(type(img)) for img in adv_imgs]
-    # adv_steps = [print(type(step)) for step in adv_steps]
     return torch.cat(adv_imgs), torch.cat(adv_steps)
     

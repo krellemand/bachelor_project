@@ -4,10 +4,33 @@ import os
 def log_msp_loss(y_hat, y):
     return torch.log(torch.amax(torch.exp(y_hat), dim=-1)/torch.sum(torch.exp(y_hat), dim=-1))
 
-def fgsm(model, xs, ys, eps, loss_func, clip_range=(None, None), return_step=False):
+def norm_loss(y_hat, y, **norm_kwargs):
+    return torch.linalg.norm(y_hat, **norm_kwargs)
+
+def sum_exp_loss(y_hat, y, dim=-1):
+    return torch.sum(torch.exp(y_hat), dim=dim)
+
+def iterative_attack(model, xs, ys, loss_func, torch_optim, clip_range=(None, None), return_step=False, max_iter=100, **opt_kwargs):
     if len(xs.shape) == 3:
         xs.requires_grad = True
-        loss = loss_func(model(xs), ys)
+        xs_init = torch.clone(xs).detach()
+        optimizer = torch_optim([xs], **opt_kwargs)
+        i = 0
+        while i < max_iter:
+            optimizer.zero_grad()
+            loss = loss_func(model(xs[None]), ys)
+            loss.backward()
+            optimizer.step()
+            i += 1
+        if return_step:
+            step = xs - xs_init
+            return torch.clip(xs, clip_range[0], clip_range[1]), step
+        return torch.clip(xs, clip_range[0], clip_range[1])
+
+def fgsm(model, xs, ys, eps, loss_func, clip_range=(None, None), return_step=False, **loss_kwargs):
+    if len(xs.shape) == 3:
+        xs.requires_grad = True
+        loss = loss_func(model(xs), ys, **loss_kwargs)
         loss.backward()
         step = eps*torch.sign(xs.grad)
         if return_step:
@@ -18,7 +41,7 @@ def fgsm(model, xs, ys, eps, loss_func, clip_range=(None, None), return_step=Fal
         steps = []
         for x, y in zip(xs,ys):
             x.requires_grad = True
-            loss = loss_func(model(x[None]), y)
+            loss = loss_func(model(x[None]), y, **loss_kwargs)
             loss.backward()
             step = eps*torch.sign(x.grad)
             steps.append(step[None])
@@ -28,21 +51,21 @@ def fgsm(model, xs, ys, eps, loss_func, clip_range=(None, None), return_step=Fal
         return torch.clip(torch.cat(output), clip_range[0], clip_range[1])
     else:
         raise NotImplementedError
-    
+
 def fp_osr_fgsm(model, x, eps=0.05, clip_range=(None, None), return_step=False, norm_ord=None):
-    return fgsm(model, x, torch.zeros(len(x)), -eps, lambda y_hat, y: torch.linalg.norm(y_hat, dim=-1, ord=norm_ord), 
-                clip_range=clip_range, return_step=return_step)
+    return fgsm(model, x, torch.zeros(len(x)), -eps, norm_loss, dim=-1, ord=norm_ord, 
+                clip_range=clip_range, return_step=return_step)  
 
 def fn_osr_fgsm(model, x, eps=0.05, clip_range=(None, None), return_step=False, norm_ord=torch.inf):
-    return fgsm(model, x, torch.zeros(len(x)), eps, lambda y_hat, y: torch.linalg.norm(y_hat, dim=-1, ord=norm_ord), 
+    return fgsm(model, x, torch.zeros(len(x)), eps, norm_loss, dim=-1, ord=norm_ord, 
                 clip_range=clip_range, return_step=return_step)
 
 def fp_osr_fgsm_sum_exp(model, x, eps=0.05, clip_range=(None, None), return_step=False):
-    return fgsm(model, x, torch.zeros(len(x)), -eps, lambda y_hat, y: torch.sum(torch.exp(y_hat), dim=-1), 
+    return fgsm(model, x, torch.zeros(len(x)), -eps, sum_exp_loss, 
                 clip_range=clip_range, return_step=return_step)
 
 def fn_osr_fgsm_sum_exp(model, x, eps=0.05, clip_range=(None, None), return_step=False):
-    return fgsm(model, x, torch.zeros(len(x)), eps, lambda y_hat, y: torch.sum(torch.exp(y_hat), dim=-1), 
+    return fgsm(model, x, torch.zeros(len(x)), eps, sum_exp_loss, 
                 clip_range=clip_range, return_step=return_step)
 
 def fn_osr_fgsm_log_msp(model, x, eps=0.05, clip_range=(None, None), return_step=False):
