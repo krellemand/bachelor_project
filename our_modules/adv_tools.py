@@ -22,10 +22,35 @@ def iterative_attack(model, xs, ys, loss_func, torch_optim, clip_range=(None, No
             loss.backward()
             optimizer.step()
             i += 1
+        xs = torch.clip(xs, clip_range[0], clip_range[1])
         if return_step:
             step = xs - xs_init
-            return torch.clip(xs, clip_range[0], clip_range[1]), step
-        return torch.clip(xs, clip_range[0], clip_range[1])
+            return xs, step
+        return xs
+    elif len(xs.shape) == 4:
+        output = []
+        steps = []
+        for x, y in zip(xs,ys):
+            x.requires_grad = True
+            x_init = torch.clone(x).detach()
+            optimizer = torch_optim([x], **opt_kwargs)
+            i = 0
+            while i < max_iter:
+                optimizer.zero_grad()
+                loss = loss_func(model(x[None]), y)
+                loss.backward()
+                optimizer.step()
+                i += 1
+            x = torch.clip(x, clip_range[0], clip_range[1])
+            step = x - x_init
+            output.append(x[None])
+            steps.append(step[None])
+        if return_step:
+            return torch.cat(output), torch.cat(steps)
+        return torch.cat(output)
+
+
+
 
 def fgsm(model, xs, ys, eps, loss_func, clip_range=(None, None), return_step=False, **loss_kwargs):
     if len(xs.shape) == 3:
