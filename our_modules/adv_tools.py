@@ -25,6 +25,7 @@ def iterative_attack(model, xs, ys, loss_func, torch_optim, clip_range=(None, No
         xs = torch.clip(xs, clip_range[0], clip_range[1])
         if return_step:
             step = xs - xs_init
+            print(torch.amax(torch.abs(step)).item())
             return xs, step
         return xs
     elif len(xs.shape) == 4:
@@ -39,10 +40,16 @@ def iterative_attack(model, xs, ys, loss_func, torch_optim, clip_range=(None, No
                 optimizer.zero_grad()
                 loss = loss_func(model(x[None]), y)
                 loss.backward()
+                # x_temp = torch.clone(x).detach()
                 optimizer.step()
+                # print(torch.max(torch.abs(x-x_temp)))
                 i += 1
+            print('change before clip: {}'.format(torch.amax(torch.abs(x-x_init)).item()))
+            print(f'- = out of range max: {clip_range[1] - torch.max(x).item()}')
+            print(f'+ = our of range min: {clip_range[0] - torch.min(x).item()}')
             x = torch.clip(x, clip_range[0], clip_range[1])
             step = x - x_init
+            print('change after clip: {}'.format(torch.amax(torch.abs(step)).item()))
             output.append(x[None])
             steps.append(step[None])
         if return_step:

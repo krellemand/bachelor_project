@@ -43,7 +43,8 @@ test_transform = transforms.Compose([
         ])
 
 # Min and max for image value after test transform is aplied
-transform_range = (-2.4097, 2.7537)
+# transform_range = (-2.4097-0.008554852294921922-0.01081085205078125, 2.7537 + 3.125076293963858e-05)
+transform_range = (-2.429065704345703, 2.7537312507629395)
 
 splits = osr_splits['tinyimagenet']
 
