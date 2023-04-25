@@ -21,7 +21,9 @@ def iterative_attack(model, xs, ys, loss_func, torch_optim, clip_range=(None, No
             loss = loss_func(model(xs[None]), ys)
             loss.backward()
             optimizer.step()
+            # xs = torch.clip(xs, clip_range[0], clip_range[1])
             i += 1
+        # print('change before clip: {}'.format(torch.amax(torch.abs(xs-xs_init)).item()))
         xs = torch.clip(xs, clip_range[0], clip_range[1])
         if return_step:
             step = xs - xs_init
@@ -32,6 +34,7 @@ def iterative_attack(model, xs, ys, loss_func, torch_optim, clip_range=(None, No
         output = []
         steps = []
         for x, y in zip(xs,ys):
+            x = torch.clone(x).detach()
             x.requires_grad = True
             x_init = torch.clone(x).detach()
             optimizer = torch_optim([x], **opt_kwargs)
@@ -42,11 +45,14 @@ def iterative_attack(model, xs, ys, loss_func, torch_optim, clip_range=(None, No
                 loss.backward()
                 # x_temp = torch.clone(x).detach()
                 optimizer.step()
+                # x = torch.clip(x, clip_range[0], clip_range[1])
                 # print(torch.max(torch.abs(x-x_temp)))
                 i += 1
-            print('change before clip: {}'.format(torch.amax(torch.abs(x-x_init)).item()))
-            print(f'- = out of range max: {clip_range[1] - torch.max(x).item()}')
-            print(f'+ = our of range min: {clip_range[0] - torch.min(x).item()}')
+            # print('change before clip: {}'.format(torch.amax(torch.abs(x-x_init)).item()))
+            # if clip_range[1] - torch.max(x).item() < 0:
+            #     print(f'- = out of range max: {clip_range[1] - torch.max(x).item()}')
+            # if clip_range[0] - torch.min(x).item() > 0:
+            #     print(f'+ = our of range min: {clip_range[0] - torch.min(x).item()}')
             x = torch.clip(x, clip_range[0], clip_range[1])
             step = x - x_init
             print('change after clip: {}'.format(torch.amax(torch.abs(step)).item()))
