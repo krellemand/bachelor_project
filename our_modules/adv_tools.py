@@ -10,26 +10,29 @@ def norm_loss(y_hat, y, **norm_kwargs):
 def sum_exp_loss(y_hat, y, dim=-1):
     return torch.sum(torch.exp(y_hat), dim=dim)
 
-def iterative_attack(model, xs, ys, loss_func, torch_optim, clip_range=(None, None), return_step=False, max_iter=100, **opt_kwargs):
+def iterative_attack(model, xs, ys, loss_func, torch_optim, clip_range=(None, None), eps=None, return_step=False, max_iter=100, **opt_kwargs):
     if len(xs.shape) == 3:
-        xs.requires_grad = True
-        xs_init = torch.clone(xs).detach()
-        optimizer = torch_optim([xs], **opt_kwargs)
+        x = xs
+        y = ys
+        x.requires_grad = True
+        x_init = torch.clone(x).detach()
+        optimizer = torch_optim([x], **opt_kwargs)
         i = 0
         while i < max_iter:
             optimizer.zero_grad()
-            loss = loss_func(model(xs[None]), ys)
+            loss = loss_func(model(x[None]), y)
             loss.backward()
             optimizer.step()
-            xs = torch.clip(xs, clip_range[0], clip_range[1])
+            with torch.no_grad():
+                if eps:
+                    x.copy_(torch.clip(x, min=x_init - eps*torch.ones_like(x_init), max=x_init + eps*torch.ones_like(x_init)))
+                x.copy_(torch.clip(x, clip_range[0], clip_range[1]))
+            x.requires_grad = True
             i += 1
-        # print('change before clip: {}'.format(torch.amax(torch.abs(xs-xs_init)).item()))
-        # xs = torch.clip(xs, clip_range[0], clip_range[1])
         if return_step:
-            step = xs - xs_init
-            print(torch.amax(torch.abs(step)).item())
-            return xs, step
-        return xs
+            step = x - x_init
+            return x, step
+        return x
     elif len(xs.shape) == 4:
         output = []
         steps = []
@@ -41,32 +44,28 @@ def iterative_attack(model, xs, ys, loss_func, torch_optim, clip_range=(None, No
             i = 0
             while i < max_iter:
                 optimizer.zero_grad()
-                # x = torch.clip(x, clip_range[0], clip_range[1])
                 loss = loss_func(model(x[None]), y)
                 loss.backward()
-                # x_temp = torch.clone(x).detach()
                 optimizer.step()
                 with torch.no_grad():
+                    if eps:
+                        x.copy_(torch.clip(x, min=x_init - eps*torch.ones_like(x_init), max=x_init + eps*torch.ones_like(x_init)))    
                     x.copy_(torch.clip(x, clip_range[0], clip_range[1]))
                 x.requires_grad = True
-
-                # print(torch.max(torch.abs(x-x_temp)))
                 i += 1
-            # print('change before clip: {}'.format(torch.amax(torch.abs(x-x_init)).item()))
-            # if clip_range[1] - torch.max(x).item() < 0:
-            #     print(f'- = out of range max: {clip_range[1] - torch.max(x).item()}')
-            # if clip_range[0] - torch.min(x).item() > 0:
-            #     print(f'+ = our of range min: {clip_range[0] - torch.min(x).item()}')
-            # x = torch.clip(x, clip_range[0], clip_range[1])
             step = x - x_init
-            print('change after clip: {}'.format(torch.amax(torch.abs(step)).item()))
             output.append(x[None])
             steps.append(step[None])
         if return_step:
             return torch.cat(output), torch.cat(steps)
         return torch.cat(output)
 
+def fp_osr_itat(model, x, eps=0.05, clip_range=(None, None), return_step=False, norm_ord=None, max_iter=25, torch_opt=torch.optim.Rprop, **opt_kwargs):
+    return iterative_attack(model, x, torch.zeros(len(x)), lambda yhat, y: norm_loss(yhat, y, ord=norm_ord, dim=-1), torch.optim.Rprop, clip_range=clip_range, eps=eps, return_step=return_step, max_iter=max_iter, **opt_kwargs)  
 
+def fn_osr_itat(model, x, eps=0.05, clip_range=(None, None), return_step=False, norm_ord=None, max_iter=25, torch_opt=torch.optim.Rprop, **opt_kwargs):
+    torch_opt.maximize = True
+    return iterative_attack(model, x, torch.zeros(len(x)), lambda yhat, y: norm_loss(yhat, y, ord=norm_ord, dim=-1), torch.optim.Rprop, clip_range=clip_range, eps=eps, return_step=return_step, max_iter=max_iter, **opt_kwargs) 
 
 
 def fgsm(model, xs, ys, eps, loss_func, clip_range=(None, None), return_step=False, **loss_kwargs):
