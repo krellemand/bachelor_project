@@ -129,7 +129,9 @@ dmypy.json
 .pyre/
 
 # data
-datasets/
+datasets/tiny-imagenet-200/train/
+datasets/tiny-imagenet-200/test/
+datasets/tiny-imagenet-200.zip
 
 # Mac Shit
 .DS_Store
