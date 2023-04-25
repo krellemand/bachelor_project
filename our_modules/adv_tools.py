@@ -21,10 +21,10 @@ def iterative_attack(model, xs, ys, loss_func, torch_optim, clip_range=(None, No
             loss = loss_func(model(xs[None]), ys)
             loss.backward()
             optimizer.step()
-            # xs = torch.clip(xs, clip_range[0], clip_range[1])
+            xs = torch.clip(xs, clip_range[0], clip_range[1])
             i += 1
         # print('change before clip: {}'.format(torch.amax(torch.abs(xs-xs_init)).item()))
-        xs = torch.clip(xs, clip_range[0], clip_range[1])
+        # xs = torch.clip(xs, clip_range[0], clip_range[1])
         if return_step:
             step = xs - xs_init
             print(torch.amax(torch.abs(step)).item())
@@ -41,11 +41,15 @@ def iterative_attack(model, xs, ys, loss_func, torch_optim, clip_range=(None, No
             i = 0
             while i < max_iter:
                 optimizer.zero_grad()
+                # x = torch.clip(x, clip_range[0], clip_range[1])
                 loss = loss_func(model(x[None]), y)
                 loss.backward()
                 # x_temp = torch.clone(x).detach()
                 optimizer.step()
-                # x = torch.clip(x, clip_range[0], clip_range[1])
+                # with torch.no_grad():
+                    # x.copy_(torch.clip(x, clip_range[0], clip_range[1]))
+                # x.requires_grad = True
+
                 # print(torch.max(torch.abs(x-x_temp)))
                 i += 1
             # print('change before clip: {}'.format(torch.amax(torch.abs(x-x_init)).item()))
@@ -53,7 +57,7 @@ def iterative_attack(model, xs, ys, loss_func, torch_optim, clip_range=(None, No
             #     print(f'- = out of range max: {clip_range[1] - torch.max(x).item()}')
             # if clip_range[0] - torch.min(x).item() > 0:
             #     print(f'+ = our of range min: {clip_range[0] - torch.min(x).item()}')
-            x = torch.clip(x, clip_range[0], clip_range[1])
+            # x = torch.clip(x, clip_range[0], clip_range[1])
             step = x - x_init
             print('change after clip: {}'.format(torch.amax(torch.abs(step)).item()))
             output.append(x[None])
