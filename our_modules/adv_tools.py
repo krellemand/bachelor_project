@@ -46,9 +46,9 @@ def iterative_attack(model, xs, ys, loss_func, torch_optim, clip_range=(None, No
                 loss.backward()
                 # x_temp = torch.clone(x).detach()
                 optimizer.step()
-                # with torch.no_grad():
-                    # x.copy_(torch.clip(x, clip_range[0], clip_range[1]))
-                # x.requires_grad = True
+                with torch.no_grad():
+                    x.copy_(torch.clip(x, clip_range[0], clip_range[1]))
+                x.requires_grad = True
 
                 # print(torch.max(torch.abs(x-x_temp)))
                 i += 1
