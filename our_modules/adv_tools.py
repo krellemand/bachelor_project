@@ -61,11 +61,12 @@ def iterative_attack(model, xs, ys, loss_func, torch_optim, clip_range=(None, No
         return torch.cat(output)
 
 def fp_osr_itat(model, x, eps=0.05, clip_range=(None, None), return_step=False, norm_ord=None, max_iter=25, torch_opt=torch.optim.Rprop, **opt_kwargs):
-    return iterative_attack(model, x, torch.zeros(len(x)), lambda yhat, y: norm_loss(yhat, y, ord=norm_ord, dim=-1), torch.optim.Rprop, clip_range=clip_range, eps=eps, return_step=return_step, max_iter=max_iter, **opt_kwargs)  
+    return iterative_attack(model, x, torch.zeros(len(x)), lambda yhat, y: norm_loss(yhat, y, ord=norm_ord, dim=-1), torch_opt, clip_range=clip_range, eps=eps, return_step=return_step, max_iter=max_iter, **opt_kwargs)  
 
 def fn_osr_itat(model, x, eps=0.05, clip_range=(None, None), return_step=False, norm_ord=None, max_iter=25, torch_opt=torch.optim.Rprop, **opt_kwargs):
     torch_opt.maximize = True
-    return iterative_attack(model, x, torch.zeros(len(x)), lambda yhat, y: norm_loss(yhat, y, ord=norm_ord, dim=-1), torch.optim.Rprop, clip_range=clip_range, eps=eps, return_step=return_step, max_iter=max_iter, **opt_kwargs) 
+    print(torch_opt.maximize)
+    return iterative_attack(model, x, torch.zeros(len(x)), lambda yhat, y: -norm_loss(yhat, y, ord=norm_ord, dim=-1), torch_opt, clip_range=clip_range, eps=eps, return_step=return_step, max_iter=max_iter, **opt_kwargs) 
 
 
 def fgsm(model, xs, ys, eps, loss_func, clip_range=(None, None), return_step=False, **loss_kwargs):
