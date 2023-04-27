@@ -9,6 +9,10 @@ from our_modules.eval_tools import load_and_eval_logit_change_scores_for_all_eps
 from our_modules.eval_tools import get_grad_norm_stats
 from our_modules.eval_tools import max_logit_change_compared_id_vs_ood
 from our_modules.eval_tools import get_diff_stats_for_eps
+from our_modules.eval_tools import get_osr_targets
+from our_modules.eval_tools import balance_binary
+
+from data.open_set_splits.osr_splits import osr_splits
 
 def plot_roc(ax, roc_stats, **plt_kwargs):
     fprs, tprs, thresholds = roc_stats
@@ -216,3 +220,32 @@ def plot_adv_imgs(eps, adv_imgs, adv_steps, mean, std, figsize=(15,10)):
                 axs[i, j].set_title((f"$\\epsilon = {eps[j]:.3}$"))
     fig.tight_layout()
     plt.show()
+
+def plot_ranked_scores(path_to_logits, path_to_csr_targets, score_func=lambda ls: torch.amax(ls, dim=-1), dataset_name='tinyimagenet', split_num=0, balance=True, figsize=(6,6), step=10, s=2, ylim=None):
+    split = osr_splits[dataset_name][split_num]
+    csr_targets = torch.load(path_to_csr_targets)
+    osr_targets = get_osr_targets(csr_targets, split)
+    logits = torch.load(path_to_logits)
+    osr_scores = score_func(logits)
+
+    if balance:
+        score_label_zipped = balance_binary(zip(osr_scores.tolist(), osr_targets.tolist()), lambda x: bool(x[1]))
+        osr_scores, osr_targets = (torch.tensor([mls for mls, _ in score_label_zipped ]), 
+                                       [osr_target for _, osr_target in score_label_zipped])
+        
+    sorted_by_score = list(enumerate(sorted((zip(osr_scores, osr_targets)), key=lambda x: x[0])))
+    id = [(i, x[0]) for i, x in sorted_by_score if not x[1]]
+    ood = [(i, x[0]) for i, x in sorted_by_score if x[1]]
+    id_idxs, id_scores = list(zip(*id))
+    ood_idxs, ood_scores = list(zip(*ood))
+
+    fig, ax = plt.subplots(1,1, figsize=figsize)
+    ax.scatter(id_idxs[::step], id_scores[::step], c='blue', label='Familiar', alpha=1, marker='|',s=s)
+    ax.scatter(ood_idxs[::step], ood_scores[::step], c='red', label='Novel', alpha=1, marker='|', s=s)
+    if ylim:
+        plt.ylim(ylim)
+    plt.legend()
+    plt.show()
+
+
+
