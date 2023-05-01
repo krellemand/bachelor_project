@@ -10,7 +10,7 @@ def norm_loss(y_hat, y, **norm_kwargs):
 def sum_exp_loss(y_hat, y, dim=-1):
     return torch.sum(torch.exp(y_hat), dim=dim)
 
-def iterative_attack(model, xs, ys, loss_func, torch_optim, clip_range=(None, None), eps=None, return_step=False, max_iter=100, **opt_kwargs):
+def iterative_attack(model, xs, ys, loss_func, torch_optim, clip_range=(None, None), eps=None, return_step=False, max_iter=100, threshold=None, adv_type='fn', score_func= lambda logits: torch.amax(logits, dim=-1), **opt_kwargs):
     if len(xs.shape) == 3:
         x = xs
         y = ys
@@ -20,8 +20,16 @@ def iterative_attack(model, xs, ys, loss_func, torch_optim, clip_range=(None, No
         i = 0
         while i < max_iter:
             optimizer.zero_grad()
-            loss = loss_func(model(x[None]), y)
-            
+            logits = model(x[None])
+            loss = loss_func(logits, y)
+            if threshold is not None:
+                score = score_func(logits)
+                if adv_type == 'fn':
+                    to_stop = (score > threshold)
+                if adv_type == 'fp':
+                    to_stop = (score < threshold)
+                if to_stop:
+                    break
             loss.backward()
             optimizer.step()
             with torch.no_grad():
@@ -45,7 +53,18 @@ def iterative_attack(model, xs, ys, loss_func, torch_optim, clip_range=(None, No
             i = 0
             while i < max_iter:
                 optimizer.zero_grad()
-                loss = loss_func(model(x[None]), y)
+                logits = model(x[None])
+                loss = loss_func(logits, y)
+                if threshold is not None:
+                    score = score_func(logits)
+                    if adv_type == 'fn':
+                        to_stop = (score > threshold)
+                    elif adv_type == 'fp':
+                        to_stop = (score < threshold)
+                    else:
+                        raise NotImplementedError
+                    if to_stop:
+                        break
                 loss.backward()
                 optimizer.step()
                 with torch.no_grad():
