@@ -21,6 +21,7 @@ def iterative_attack(model, xs, ys, loss_func, torch_optim, clip_range=(None, No
         while i < max_iter:
             optimizer.zero_grad()
             loss = loss_func(model(x[None]), y)
+            
             loss.backward()
             optimizer.step()
             with torch.no_grad():
