@@ -24,7 +24,7 @@ def iterative_attack(model, xs, ys, loss_func, torch_optim, clip_range=(None, No
             loss.backward()
             optimizer.step()
             with torch.no_grad():
-                if eps:
+                if eps is not None:
                     x.copy_(torch.clip(x, min=x_init - eps*torch.ones_like(x_init), max=x_init + eps*torch.ones_like(x_init)))
                 x.copy_(torch.clip(x, clip_range[0], clip_range[1]))
             x.requires_grad = True
@@ -48,7 +48,7 @@ def iterative_attack(model, xs, ys, loss_func, torch_optim, clip_range=(None, No
                 loss.backward()
                 optimizer.step()
                 with torch.no_grad():
-                    if eps:
+                    if eps is not None:
                         x.copy_(torch.clip(x, min=x_init - eps*torch.ones_like(x_init), max=x_init + eps*torch.ones_like(x_init)))    
                     x.copy_(torch.clip(x, clip_range[0], clip_range[1]))
                 x.requires_grad = True
