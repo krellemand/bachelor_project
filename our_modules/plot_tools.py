@@ -221,12 +221,14 @@ def plot_adv_imgs(eps, adv_imgs, adv_steps, mean, std, figsize=(15,10)):
     fig.tight_layout()
     plt.show()
 
-def plot_ranked_scores(path_to_logits, path_to_csr_targets, score_func=lambda ls: torch.amax(ls, dim=-1), dataset_name='tinyimagenet', split_num=0, balance=True, figsize=(6,6), step=10, s=2, ylim=None):
+def plot_ranked_scores(path_to_logits, path_to_csr_targets, score_func=lambda ls: torch.amax(ls, dim=-1), dataset_name='tinyimagenet', 
+                       split_num=0, balance=True, figsize=(6,6), step=10, s=2, ylim=None, highlight_idx = [], highlighted_label = [], highlighted_linestyle = []):
     split = osr_splits[dataset_name][split_num]
     csr_targets = torch.load(path_to_csr_targets)
     osr_targets = get_osr_targets(csr_targets, split)
     logits = torch.load(path_to_logits)
     osr_scores = score_func(logits)
+    highlighted_osr_scores = [osr_scores[idx] for idx in highlight_idx]
 
     if balance:
         score_label_zipped = balance_binary(zip(osr_scores.tolist(), osr_targets.tolist()), lambda x: bool(x[1]))
@@ -240,12 +242,12 @@ def plot_ranked_scores(path_to_logits, path_to_csr_targets, score_func=lambda ls
     ood_idxs, ood_scores = list(zip(*ood))
 
     fig, ax = plt.subplots(1,1, figsize=figsize)
+    for score, label, linestyle in zip(highlighted_osr_scores, highlighted_label, highlighted_linestyle):
+        ax.hlines([score], 0, len(osr_scores), colors=['grey'], label=label, linestyles=[linestyle], alpha=0.5)
+
     ax.scatter(id_idxs[::step], id_scores[::step], c='blue', label='Familiar', alpha=1, marker='|',s=s)
     ax.scatter(ood_idxs[::step], ood_scores[::step], c='red', label='Novel', alpha=1, marker='|', s=s)
     if ylim:
         plt.ylim(ylim)
     plt.legend()
     plt.show()
-
-
-
