@@ -175,6 +175,5 @@ def perturb_tin_image(eps, img, path_to_pretrained_weights_folder, device, split
     adv_img_and_step = [attack(model, img.to(device).detach()[None], ep, clip_range=transform_range, return_step=True, **attack_kwargs)
                        for ep in eps]
     adv_imgs, adv_steps = list(zip(*adv_img_and_step))
-    print(adv_imgs[0].shape, adv_steps[0].shape)
     return torch.cat(adv_imgs), torch.cat(adv_steps)
     

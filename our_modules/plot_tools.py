@@ -19,17 +19,23 @@ def plot_roc(ax, roc_stats, **plt_kwargs):
     ax.plot(fprs, tprs, **plt_kwargs)
 
 
-def plot_image_on_ax(ax, normalized_img, mean, std, **plt_kwargs):
+def plot_image_on_ax(ax, normalized_img, mean, std, channel=None, **plt_kwargs):
     normalized_img = normalized_img.to('cpu')
+    c = None
     if normalized_img.requires_grad:
         normalized_img = normalized_img.detach()
     img = normalized_img*np.array(std)[:, None, None] + np.array(mean)[:, None, None]
-    ax.imshow(np.clip(img.permute(1,2,0).numpy(), 0, 1), **plt_kwargs)
+    if channel is not None:
+        img = img[channel][None]
+        print(img.shape)
+        c = 'binary'
+    img = np.clip(img.permute(1,2,0).numpy(), 0, 1)
+    ax.imshow(img, cmap=c, **plt_kwargs)
 
 
-def plot_image(normalized_img, mean, std, **plt_kwargs):
+def plot_image(normalized_img, mean, std, channel=None, **plt_kwargs):
     fig, ax = plt.subplots(1,1, figsize=(5,5))
-    plot_image_on_ax(ax, normalized_img.to('cpu'), mean=mean, std=std, **plt_kwargs)
+    plot_image_on_ax(ax, normalized_img.to('cpu'), mean=mean, std=std, channel=channel, **plt_kwargs)
     ax.axis('off')
     plt.show()
 
