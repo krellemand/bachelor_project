@@ -11,6 +11,9 @@ def sum_exp_loss(y_hat, y, dim=-1):
     return torch.sum(torch.exp(y_hat), dim=dim)
 
 def iterative_attack(model, xs, ys, loss_func, torch_optim, clip_range=(None, None), eps=None, return_step=False, max_iter=100, threshold=None, adv_type='fn', score_func= lambda logits: torch.amax(logits, dim=-1), **opt_kwargs):
+    device = xs.device
+    if clip_range != (None, None):
+        clip_range = tuple([t.to(device) for t in clip_range])
     if len(xs.shape) == 3:
         x = xs
         y = ys
@@ -26,8 +29,10 @@ def iterative_attack(model, xs, ys, loss_func, torch_optim, clip_range=(None, No
                 score = score_func(logits)
                 if adv_type == 'fn':
                     to_stop = (score > threshold)
-                if adv_type == 'fp':
+                elif adv_type == 'fp':
                     to_stop = (score < threshold)
+                else:
+                    raise NotImplementedError
                 if to_stop:
                     break
             loss.backward()
@@ -35,9 +40,10 @@ def iterative_attack(model, xs, ys, loss_func, torch_optim, clip_range=(None, No
             with torch.no_grad():
                 if eps is not None:
                     x.copy_(torch.clip(x, min=x_init - eps*torch.ones_like(x_init), max=x_init + eps*torch.ones_like(x_init)))
-                x.copy_(torch.clip(x, clip_range[0], clip_range[1]))
+                x.copy_(torch.clip(x, min=clip_range[0], max=clip_range[1]))
             x.requires_grad = True
             i += 1
+        # print(f'Ran {i} of {max_iter} possible iterations')
         if return_step:
             step = x - x_init
             return x, step
@@ -70,24 +76,30 @@ def iterative_attack(model, xs, ys, loss_func, torch_optim, clip_range=(None, No
                 with torch.no_grad():
                     if eps is not None:
                         x.copy_(torch.clip(x, min=x_init - eps*torch.ones_like(x_init), max=x_init + eps*torch.ones_like(x_init)))    
-                    x.copy_(torch.clip(x, clip_range[0], clip_range[1]))
+                    x.copy_(torch.clip(x, min=clip_range[0], max=clip_range[1]))
                 x.requires_grad = True
                 i += 1
             step = x - x_init
             output.append(x[None])
             steps.append(step[None])
+        # print(f'Ran {i} of {max_iter} possible iterations')
         if return_step:
             return torch.cat(output), torch.cat(steps)
         return torch.cat(output)
 
-def fp_osr_itat(model, x, eps=0.05, clip_range=(None, None), return_step=False, norm_ord=None, max_iter=25, torch_opt=torch.optim.Rprop, **opt_kwargs):
-    return iterative_attack(model, x, torch.zeros(len(x)), lambda yhat, y: norm_loss(yhat, y, ord=norm_ord, dim=-1), torch_opt, clip_range=clip_range, eps=eps, return_step=return_step, max_iter=max_iter, **opt_kwargs)  
+def fp_osr_itat(model, x, eps=0.05, clip_range=(None, None), return_step=False, norm_ord=None, max_iter=25, torch_opt=torch.optim.Rprop, threshold=None, adv_type='fp', score_func= lambda logits: torch.amax(logits, dim=-1), **opt_kwargs):
+    return iterative_attack(model, x, torch.zeros(len(x)), lambda yhat, y: norm_loss(yhat, y, ord=norm_ord, dim=-1), torch_opt, clip_range=clip_range, eps=eps, return_step=return_step, max_iter=max_iter, threshold=threshold, adv_type=adv_type, score_func=score_func, **opt_kwargs)  
 
-def fn_osr_itat(model, x, eps=0.05, clip_range=(None, None), return_step=False, norm_ord=None, max_iter=25, torch_opt=torch.optim.Rprop, **opt_kwargs):
-    return iterative_attack(model, x, torch.zeros(len(x)), lambda yhat, y: -norm_loss(yhat, y, ord=norm_ord, dim=-1), torch_opt, clip_range=clip_range, eps=eps, return_step=return_step, max_iter=max_iter, **opt_kwargs) 
+def fn_osr_itat(model, x, eps=0.05, clip_range=(None, None), return_step=False, norm_ord=None, max_iter=25, torch_opt=torch.optim.Rprop, threshold=None, adv_type='fn', score_func= lambda logits: torch.amax(logits, dim=-1), **opt_kwargs):
+    return iterative_attack(model, x, torch.zeros(len(x)), lambda yhat, y: -norm_loss(yhat, y, ord=norm_ord, dim=-1), torch_opt, clip_range=clip_range, eps=eps, return_step=return_step, max_iter=max_iter, threshold=threshold, adv_type=adv_type, score_func=score_func, **opt_kwargs)  
 
+def fp_osr_itat_sum_exp(model, x, eps=0.05, clip_range=(None, None), return_step=False, max_iter=25, torch_opt=torch.optim.Rprop, threshold=None, adv_type='fp', score_func= lambda logits: torch.amax(logits, dim=-1), **opt_kwargs):
+    return iterative_attack(model, x, torch.zeros(len(x)), lambda yhat, y: sum_exp_loss(yhat, y, dim=-1), torch_opt, clip_range=clip_range, eps=eps, return_step=return_step, max_iter=max_iter, threshold=threshold, adv_type=adv_type, score_func=score_func, **opt_kwargs) 
 
 def fgsm(model, xs, ys, eps, loss_func, clip_range=(None, None), return_step=False, **loss_kwargs):
+    device = xs.device
+    if clip_range != (None, None):
+        clip_range = tuple([t.to(device) for t in clip_range])
     if len(xs.shape) == 3:
         xs.requires_grad = True
         loss = loss_func(model(xs), ys, **loss_kwargs)

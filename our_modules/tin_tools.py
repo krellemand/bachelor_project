@@ -43,8 +43,15 @@ test_transform = transforms.Compose([
         ])
 
 # Min and max for image value after test transform is aplied
-# transform_range = (-2.4097-0.008554852294921922-0.01081085205078125, 2.7537 + 3.125076293963858e-05)
-transform_range = (-2.429065704345703, 2.7537312507629395)
+# transform_range = (-2.429065704345703, 2.7537312507629395) # Original misunderstood clip range that clips across dimensions
+transform_min_max = [((0-mean)/std, (1-mean)/std) for mean, std in zip(mean, std)]
+transform_min_image = torch.zeros(3, 64, 64)
+transform_max_image = torch.zeros(3, 64, 64)
+for i in range(3):
+    transform_min_image[i] = transform_min_max[i][0]
+    transform_max_image[i] = transform_min_max[i][1]
+
+transform_range = (transform_min_image, transform_max_image)
 
 splits = osr_splits['tinyimagenet']
 
@@ -168,5 +175,6 @@ def perturb_tin_image(eps, img, path_to_pretrained_weights_folder, device, split
     adv_img_and_step = [attack(model, img.to(device).detach()[None], ep, clip_range=transform_range, return_step=True, **attack_kwargs)
                        for ep in eps]
     adv_imgs, adv_steps = list(zip(*adv_img_and_step))
+    print(adv_imgs[0].shape, adv_steps[0].shape)
     return torch.cat(adv_imgs), torch.cat(adv_steps)
     
