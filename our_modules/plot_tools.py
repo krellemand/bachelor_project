@@ -74,8 +74,12 @@ class EpsExperimentPlot():
         self.roc_stats = None
         self.avg_scores = None
 
-    def load_mls_stats(self, path_to_eps_dirs, split_num, balance=True, dataset_name='tinyimagenet'):
+    def load_mls_stats(self, path_to_eps_dirs, split_num, balance=True, dataset_name='tinyimagenet', max_eps=None):
         self.eps, self.roc_stats, self.avg_scores = load_and_eval_mls_osr_for_all_eps(path_to_eps_dirs, split_num, dataset_name=dataset_name, balance=balance, return_avg_mls=True)
+        if max_eps is not None:
+            data = [(eps, roc_stats, avg_scores) for eps, roc_stats, avg_scores in zip(self.eps, self.roc_stats, self.avg_scores) if eps < max_eps]
+            self.eps, self.roc_stats, self.avg_scores = tuple(zip(*data))
+
 
     def load_logit_change_stats(self, path_to_eps_dirs, path_to_plain_logit_file, split_num, similarity_func=lambda after, before: torch.amax(after, dim=-1) - torch.amax(before, dim=-1), balance=True, dataset_name='tinyimagenet'):
         self.eps, self.roc_stats, self.avg_scores = load_and_eval_logit_change_scores_for_all_eps(path_to_eps_dirs, path_to_plain_logit_file, split_num, similarity_func=similarity_func, dataset_name=dataset_name, balance=balance, return_avg_score=True)
@@ -104,8 +108,8 @@ class EpsExperimentPlot():
             mark_inset(self.ax1, self.axins, loc1=2, loc2=3, fc="none", ec="0.5")
 
     def load_and_add_mls_to_eps_plot(self, path_to_eps_dirs, split_num, balance=True, label_suffix='', 
-                                     dataset_name='tinyimagenet', **plt_kwargs):
-        self.load_mls_stats(path_to_eps_dirs, split_num, balance=balance, dataset_name=dataset_name)
+                                     dataset_name='tinyimagenet', max_eps=None, **plt_kwargs):
+        self.load_mls_stats(path_to_eps_dirs, split_num, balance=balance, dataset_name=dataset_name, max_eps=max_eps)
         self.add_to_eps_plot(label_suffix=label_suffix, **plt_kwargs)
 
     def load_and_add_logit_change_to_eps_plot(self, path_to_eps_dirs, path_to_plain_logit_file, split_num, 
