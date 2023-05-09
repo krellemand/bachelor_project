@@ -57,18 +57,18 @@ class EpsExperimentPlot():
         eps_fig, eps_ax = plt.subplots(1,1, figsize=eps_figsize)
         self.fig = eps_fig
         self.ax1 = eps_ax
-        self.ax1.set_xlabel('$\\epsilon$ - the size of the advesarial perturbation.')
+        self.ax1.set_xlabel('$\\epsilon$ - Size of the Advesarial Perturbation.')
         self.ax1.set_ylabel('AUROC', c='black')
         if self.add_zoom:
             self.axins = zoomed_inset_axes(self.ax1, 10, loc=1)
         if self.which_lines == 'both':
-            self.ax1.set_xlabel('$\\epsilon$ - the size of the advesarial perturbation.')
+            self.ax1.set_xlabel('$\\epsilon$ - Size of the Advesarial Perturbation.')
             self.ax1.set_ylabel('AUROC', c='red')
             self.ax2 = eps_ax.twinx()
-            self.ax2.set_ylabel('Average OSR Score - $\\mathcal{S}\\:(y\\in\\mathcal{C}\\mid x)$', c='blue')
+            self.ax2.set_ylabel('Average OSR Score - $\\mathcal{S}\\:(y\\in\\mathcal{F}\\mid x)$', c='blue')
         if self.which_lines == 'mls':
             self.ax2 = self.ax1
-            self.ax2.set_ylabel('Average OSR Score - $\\mathcal{S}\\:(y\\in\\mathcal{C}\\mid x)$', c='black')
+            self.ax2.set_ylabel('Average OSR Score - $\\mathcal{S}\\:(y\\in\\mathcal{F}\\mid x)$', c='black')
         self.recent_eps = None
         self.eps = None
         self.roc_stats = None
@@ -95,11 +95,11 @@ class EpsExperimentPlot():
             if self.add_zoom:
                 self.axins.plot(self.eps, self.avg_scores, c='blue')
         if self.which_lines == 'AUROC':
-            self.ax1.plot(self.eps, aurocs, label='AUROC' + label_suffix, **plt_kwargs)
+            self.ax1.plot(self.eps, aurocs, label=label_suffix, **plt_kwargs)
             if self.add_zoom:
                 self.axins.plot(self.eps, aurocs, **plt_kwargs)
         if self.which_lines == 'mls':
-            self.ax2.plot(self.eps, self.avg_scores, label='Average OSR Score' + label_suffix, **plt_kwargs)
+            self.ax2.plot(self.eps, self.avg_scores, label=label_suffix, **plt_kwargs)
             if self.add_zoom:
                 self.axins.plot(self.eps, aurocs, **plt_kwargs)
         if self.add_zoom:
@@ -108,15 +108,17 @@ class EpsExperimentPlot():
             mark_inset(self.ax1, self.axins, loc1=2, loc2=3, fc="none", ec="0.5")
 
     def load_and_add_mls_to_eps_plot(self, path_to_eps_dirs, split_num, balance=True, label_suffix='', 
-                                     dataset_name='tinyimagenet', max_eps=None, **plt_kwargs):
+                                     dataset_name='tinyimagenet', max_eps=None, invert_auroc=False, **plt_kwargs):
         self.load_mls_stats(path_to_eps_dirs, split_num, balance=balance, dataset_name=dataset_name, max_eps=max_eps)
         self.add_to_eps_plot(label_suffix=label_suffix, **plt_kwargs)
 
     def load_and_add_logit_change_to_eps_plot(self, path_to_eps_dirs, path_to_plain_logit_file, split_num, 
                                               similarity_func=lambda after, before: torch.amax(after, dim=-1) - torch.amax(before, dim=-1), 
-                                              balance=True, label_suffix='', dataset_name='tinyimagenet', **plt_kwargs):
+                                              balance=True, label_suffix='', dataset_name='tinyimagenet', invert_auroc=False, **plt_kwargs):
         self.load_logit_change_stats(path_to_eps_dirs, path_to_plain_logit_file, split_num, similarity_func=similarity_func, 
                                      balance=balance, dataset_name=dataset_name)
+        if invert_auroc:
+            self.roc_stats = [(x[0], x[1]) if x[1] > 0.5 else (x[0], (1-x[1])) for x in self.roc_stats]
         self.add_to_eps_plot(label_suffix, **plt_kwargs)
 
     def set_legend_and_highlight_eps(self, eps_idxs=[], legend_loc=(0.72,0.8), h_line=False):
@@ -129,17 +131,19 @@ class EpsExperimentPlot():
             if self.add_zoom:
                 self.axins.axhline(h_line, 0, 1, linestyle = 'dashed', c='salmon', alpha=0.5)
         chosen_eps = [self.recent_eps[i] for i in eps_idxs]
+        # if np.isclose(chosen_eps[0], chosen_eps[1], rtol=0.0, atol=0.2):
+        #     chosen_eps = chosen_eps[1:]
         locs, labels = plt.xticks()
         locs = locs[1:-1]
-        locs = [l for l in locs if not np.isclose(l, chosen_eps, rtol=0.0, atol=0.2).any()]
+        locs = [l for l in locs if not np.isclose(l, chosen_eps, rtol=0.0, atol=0.05).any()]
         locs += chosen_eps
         plt.xticks([round(l, 2) for l in locs])
         self.fig.legend(loc=legend_loc)
 
     def show_and_save(self, save_path=False):
-        plt.show()
         if save_path:
-            plt.savefig(save_path, transparent=True, bbox_inches='tight')
+            plt.savefig(save_path + '.pdf', bbox_inches='tight')
+        plt.show()
 
 class IdOodPlot():
     def __init__(self):
@@ -174,9 +178,10 @@ class IdOodPlot():
         self.ood_ys = [gn for gn, _ in ood_stats]
         self.ood_xs = [s for _, s in ood_stats]
 
-    def make_boxplot(self, figsize=(6,6), **boxplot_kwargs):
+    def make_boxplot(self, figsize=(6,6), ylabel='', **boxplot_kwargs):
         self.fig, self.ax = plt.subplots(1,1, figsize=figsize)
         self.ax.boxplot((self.id_ys, self.ood_ys), **boxplot_kwargs)
+        self.ax.set_ylabel(ylabel)
 
     def make_scatter_plot(self, window_size=5,figsize=(6,6), xlabel=r'$\mathcal{S}$ - Maximum Logit Score (MLS)', ylabel=r'Gradient Norm - $\mathbb{E}\:\left[||\:\nabla_{\bf{x}} \log S_{\hat{y}}({\bf{x}}) \:||_1 \mid \mathcal{S}\:\right]$'):
         self.fig, self.ax = plt.subplots(1,1, figsize=figsize)
@@ -188,8 +193,8 @@ class IdOodPlot():
                               for i, score in enumerate(self.ood_xs)][window_size:-window_size]
         id_scores, id_means = list(zip(*id_scores_vs_means))
         ood_scores, ood_means = list(zip(*ood_scores_vs_means))
-        self.ax.plot(id_scores, id_means, label='ID')
-        self.ax.plot(ood_scores, ood_means, label='OOD', c='red')
+        self.ax.plot(id_scores, id_means, label='Familiar')
+        self.ax.plot(ood_scores, ood_means, label='Novel', c='red')
         self.ax.set_xlabel(xlabel)
         self.ax.set_ylabel(ylabel)
 
@@ -198,9 +203,9 @@ class IdOodPlot():
         self.ax.legend()
 
     def show_and_save(self, save_path=False):
-        plt.show()
         if save_path:
-            plt.savefig(save_path, transparent=True, bbox_inches='tight')
+            plt.savefig(save_path + '.pdf', transparent=True, bbox_inches='tight')
+        plt.show()
 
 
 def plot_diff_stats_for_eps(path_plain_logits, path_to_attack_folder, path_csr_targets, split_num=0, dataset_name='tinyimagenet', figsize = (6,6), highlight_eps_idx=5):
@@ -208,17 +213,17 @@ def plot_diff_stats_for_eps(path_plain_logits, path_to_attack_folder, path_csr_t
     id_q1, id_q2, id_q3 = list(zip(*id_stats))
     ood_q1, ood_q2, ood_q3 = list(zip(*ood_stats))
     fig, ax = plt.subplots(1,1, figsize=figsize)
-    ax.plot(eps_list, id_q2, label='ID', c='b')
+    ax.plot(eps_list, id_q2, label='Familiar', c='b')
     ax.fill_between(eps_list, id_q1, id_q3, color='cornflowerblue', alpha=0.2)
-    ax.plot(eps_list, ood_q2, label='OOD', c='r')
+    ax.plot(eps_list, ood_q2, label='Novel', c='r')
     ax.fill_between(eps_list, ood_q1, ood_q3, color='salmon', alpha=0.2)
     ax.axvline(eps_list[highlight_eps_idx], 0, 1, linestyle='dashed', c='gray', alpha=0.5, label=f'$\epsilon$ = {eps_list[highlight_eps_idx]:.2}')
     ax.legend()
-    ax.set_xlabel('$\\epsilon$ - the size of the advesarial perturbation.')
+    ax.set_xlabel('$\\epsilon$ - Size of the Advesarial Perturbation.')
     ax.set_ylabel(r'Signed Maximum Logit Change;  $\mathcal{S}_{adv} - \mathcal{S}$')
     plt.show()
 
-def plot_adv_imgs(eps, adv_imgs, adv_steps, mean, std, figsize=(15,10)):
+def plot_adv_imgs(eps, adv_imgs, adv_steps, mean, std, figsize=(15,10), save_path=None):
     img_stack = torch.vstack((adv_imgs[None], adv_steps[None]))
     fig, axs = plt.subplots(2, len(adv_imgs), figsize=figsize)
     if len(axs.shape) == 1:
@@ -230,10 +235,12 @@ def plot_adv_imgs(eps, adv_imgs, adv_steps, mean, std, figsize=(15,10)):
             if i == 0:
                 axs[i, j].set_title((f"$\\epsilon = {eps[j]:.3}$"))
     fig.tight_layout()
+    if save_path:
+        plt.savefig(save_path + '.pdf', bbox_inches='tight')
     plt.show()
 
 def plot_ranked_scores(path_to_logits, path_to_csr_targets, score_func=lambda ls: torch.amax(ls, dim=-1), dataset_name='tinyimagenet', 
-                       split_num=0, balance=True, figsize=(6,6), step=10, s=2, ylim=None, highlight_idx = [], highlighted_label = [], highlighted_linestyle = []):
+                       split_num=0, balance=True, figsize=(6,6), step=10, s=2, ylim=None, highlight_idx = [], highlighted_label = [], highlighted_linestyle = [], ylabel='MLS', xlabel='Ranking', save_path=None):
     split = osr_splits[dataset_name][split_num]
     csr_targets = torch.load(path_to_csr_targets)
     osr_targets = get_osr_targets(csr_targets, split)
@@ -258,7 +265,11 @@ def plot_ranked_scores(path_to_logits, path_to_csr_targets, score_func=lambda ls
 
     ax.scatter(id_idxs[::step], id_scores[::step], c='blue', label='Familiar', alpha=1, marker='|',s=s)
     ax.scatter(ood_idxs[::step], ood_scores[::step], c='red', label='Novel', alpha=1, marker='|', s=s)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
     if ylim:
         plt.ylim(ylim)
     plt.legend()
+    if save_path:
+        plt.savefig(save_path + '.pdf', bbox_inches='tight')
     plt.show()
