@@ -208,7 +208,8 @@ class IdOodPlot():
         plt.show()
 
 
-def plot_diff_stats_for_eps(path_plain_logits, path_to_attack_folder, path_csr_targets, split_num=0, dataset_name='tinyimagenet', figsize = (6,6), highlight_eps_idx=5):
+def plot_diff_stats_for_eps(path_plain_logits, path_to_attack_folder, path_csr_targets, split_num=0, dataset_name='tinyimagenet', figsize = (6,6), highlight_eps_idx=5,
+                            save_path=False):
     eps_list, id_stats, ood_stats = get_diff_stats_for_eps(path_plain_logits, path_to_attack_folder, path_csr_targets, split_num=split_num, dataset_name=dataset_name)
     id_q1, id_q2, id_q3 = list(zip(*id_stats))
     ood_q1, ood_q2, ood_q3 = list(zip(*ood_stats))
@@ -221,6 +222,8 @@ def plot_diff_stats_for_eps(path_plain_logits, path_to_attack_folder, path_csr_t
     ax.legend()
     ax.set_xlabel('$\\epsilon$ - Size of the Advesarial Perturbation.')
     ax.set_ylabel(r'Signed Maximum Logit Change;  $\mathcal{S}_{adv} - \mathcal{S}$')
+    if save_path:
+        plt.savefig(save_path + '.pdf', transparent=True, bbox_inches='tight')
     plt.show()
 
 def plot_adv_imgs(eps, adv_imgs, adv_steps, mean, std, figsize=(15,10), save_path=None):
