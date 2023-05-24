@@ -33,20 +33,25 @@ def plot_image_on_ax(ax, normalized_img, mean, std, channel=None, **plt_kwargs):
     ax.imshow(img, cmap=c, **plt_kwargs)
 
 
-def plot_image(normalized_img, mean, std, channel=None, **plt_kwargs):
+def plot_image(normalized_img, mean, std, channel=None, save_path=False, **plt_kwargs):
     fig, ax = plt.subplots(1,1, figsize=(5,5))
     plot_image_on_ax(ax, normalized_img.to('cpu'), mean=mean, std=std, channel=channel, **plt_kwargs)
     ax.axis('off')
+    if save_path:
+        plt.savefig(save_path, bbox_inches='tight')
     plt.show()
 
 
-def plot_image_i(i, dataset, mean, std, **plt_kwargs):
+def plot_image_i(i, dataset, mean, std, save_path=False, **plt_kwargs):
     img, label, uq_idx = dataset[i]
     # Unnormalize
     img = img*np.array(std)[:, None, None] + np.array(mean)[:, None, None]
     # The image is clipped due to numerical imprecision?
     plt.imshow(np.clip(img.permute(1,2,0).numpy(), 0.0, 1.0), **plt_kwargs)
-    print(label, uq_idx)
+    plt.axis('off')
+    # print(label, uq_idx)
+    if save_path:
+        plt.savefig(save_path, bbox_inches='tight')
     plt.show()
 
 
@@ -65,10 +70,10 @@ class EpsExperimentPlot():
             self.ax1.set_xlabel('$\\epsilon$ - Size of the Advesarial Perturbation.')
             self.ax1.set_ylabel('AUROC', c='red')
             self.ax2 = eps_ax.twinx()
-            self.ax2.set_ylabel('Average OSR Score - $\\mathcal{S}\\:(y\\in\\mathcal{F}\\mid x)$', c='blue')
+            self.ax2.set_ylabel('Average MLS - $\\mathcal{S}\\:(y\\in\\mathcal{F}\\mid x)$', c='blue')
         if self.which_lines == 'mls':
             self.ax2 = self.ax1
-            self.ax2.set_ylabel('Average OSR Score - $\\mathcal{S}\\:(y\\in\\mathcal{F}\\mid x)$', c='black')
+            self.ax2.set_ylabel('Average MLS - $\\mathcal{S}\\:(y\\in\\mathcal{F}\\mid x)$', c='black')
         self.recent_eps = None
         self.eps = None
         self.roc_stats = None
@@ -243,31 +248,49 @@ def plot_adv_imgs(eps, adv_imgs, adv_steps, mean, std, figsize=(15,10), save_pat
     plt.show()
 
 def plot_ranked_scores(path_to_logits, path_to_csr_targets, score_func=lambda ls: torch.amax(ls, dim=-1), dataset_name='tinyimagenet', 
-                       split_num=0, balance=True, figsize=(6,6), step=10, s=2, ylim=None, highlight_idx = [], highlighted_label = [], highlighted_linestyle = [], ylabel='MLS', xlabel='Ranking', save_path=None):
+                       split_num=0, balance=True, figsize=(6,6), step=10, s=2, ylim=None, highlight_idx = [], highlighted_label = [], highlighted_linestyle = [], ylabel='MLS', 
+                       xlabel='Ranking', save_path=None, show_plain=False, show_plain_original=False, path_to_plain=''):
     split = osr_splits[dataset_name][split_num]
     csr_targets = torch.load(path_to_csr_targets)
     osr_targets = get_osr_targets(csr_targets, split)
     logits = torch.load(path_to_logits)
     osr_scores = score_func(logits)
+    if show_plain or show_plain_original:
+        plain_logits = torch.load(path_to_plain)
+        osr_scores_plain = score_func(plain_logits)
+    else:
+        osr_scores_plain = osr_scores
     highlighted_osr_scores = [osr_scores[idx] for idx in highlight_idx]
-
     if balance:
-        score_label_zipped = balance_binary(zip(osr_scores.tolist(), osr_targets.tolist()), lambda x: bool(x[1]))
-        osr_scores, osr_targets = (torch.tensor([mls for mls, _ in score_label_zipped ]), 
-                                       [osr_target for _, osr_target in score_label_zipped])
+        score_label_zipped = balance_binary(zip(osr_scores.tolist(), osr_targets.tolist(), osr_scores_plain.tolist()), lambda x: bool(x[1]))
+        osr_scores, osr_targets, osr_scores_plain = (torch.tensor([mls for mls, _, _ in score_label_zipped ]), 
+                                       [osr_target for _, osr_target, _ in score_label_zipped], torch.tensor([plain for _,_,plain in score_label_zipped]))
+
         
-    sorted_by_score = list(enumerate(sorted((zip(osr_scores, osr_targets)), key=lambda x: x[0])))
-    id = [(i, x[0]) for i, x in sorted_by_score if not x[1]]
-    ood = [(i, x[0]) for i, x in sorted_by_score if x[1]]
-    id_idxs, id_scores = list(zip(*id))
-    ood_idxs, ood_scores = list(zip(*ood))
+    sorted_by_score = list(enumerate(sorted((zip(osr_scores, osr_targets, osr_scores_plain)), key=lambda x: x[0])))[::step]
+    id = [(i, x[0], x[2]) for i, x in sorted_by_score if not x[1]]
+    ood = [(i, x[0], x[2]) for i, x in sorted_by_score if x[1]]
+    id_idxs, id_scores, id_plain_scores = list(zip(*id))
+    ood_idxs, ood_scores, ood_plain_scores = list(zip(*ood))
 
     fig, ax = plt.subplots(1,1, figsize=figsize)
     for score, label, linestyle in zip(highlighted_osr_scores, highlighted_label, highlighted_linestyle):
         ax.hlines([score], 0, len(osr_scores), colors=['grey'], label=label, linestyles=[linestyle], alpha=0.5)
+    if show_plain:
+        ax.scatter(id_idxs, id_plain_scores, c='blue', label='Familiar', alpha=0.1, marker='.',s=s)
+        ax.scatter(ood_idxs, ood_plain_scores, c='red', label='Novel', alpha=0.1, marker='.', s=s)
 
-    ax.scatter(id_idxs[::step], id_scores[::step], c='blue', label='Familiar', alpha=1, marker='|',s=s)
-    ax.scatter(ood_idxs[::step], ood_scores[::step], c='red', label='Novel', alpha=1, marker='|', s=s)
+    ax.scatter(ood_idxs, ood_scores, c='red', label='Novel', alpha=1, marker='|', s=s)
+    ax.scatter(id_idxs, id_scores, c='blue', label='Familiar', alpha=1, marker='|',s=s)
+    
+    if show_plain_original:
+        sorted_by_score = list(enumerate(sorted((zip(osr_scores, osr_targets, osr_scores_plain)), key=lambda x: x[2])))[::step]
+        id = [(i, x[0], x[2]) for i, x in sorted_by_score if not x[1]]
+        ood = [(i, x[0], x[2]) for i, x in sorted_by_score if x[1]]
+        id_idxs, id_scores, id_plain_scores = list(zip(*id))
+        ood_idxs, ood_scores, ood_plain_scores = list(zip(*ood))
+        ax.scatter(id_idxs, id_plain_scores, c='blue', label='Familiar', alpha=0.01, marker='|',s=s)
+        ax.scatter(ood_idxs, ood_plain_scores, c='red', label='Novel', alpha=0.01, marker='|', s=s)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     if ylim:
