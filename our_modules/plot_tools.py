@@ -56,7 +56,7 @@ def plot_image_i(i, dataset, mean, std, save_path=False, **plt_kwargs):
 
 
 class EpsExperimentPlot():
-    def __init__(self, eps_figsize=(10,4), adv_fisize=(15,6), which_lines='both', add_zoom=(-0.003, 0.012, 0.825, 0.84)):
+    def __init__(self, eps_figsize=(10,4), adv_fisize=(15,6), which_lines='both', add_zoom=(-0.003, 0.012, 0.825, 0.84), mls_title='Average MLS - $\\mathcal{S}\\:(y\\in\\mathcal{F}\\mid x)$'):
         self.which_lines = which_lines
         self.add_zoom = add_zoom
         eps_fig, eps_ax = plt.subplots(1,1, figsize=eps_figsize)
@@ -70,10 +70,10 @@ class EpsExperimentPlot():
             self.ax1.set_xlabel('$\\epsilon$ - Size of the Advesarial Perturbation.')
             self.ax1.set_ylabel('AUROC', c='red')
             self.ax2 = eps_ax.twinx()
-            self.ax2.set_ylabel('Average MLS - $\\mathcal{S}\\:(y\\in\\mathcal{F}\\mid x)$', c='blue')
+            self.ax2.set_ylabel(mls_title, c='blue')
         if self.which_lines == 'mls':
             self.ax2 = self.ax1
-            self.ax2.set_ylabel('Average MLS - $\\mathcal{S}\\:(y\\in\\mathcal{F}\\mid x)$', c='black')
+            self.ax2.set_ylabel(mls_title, c='black')
         self.recent_eps = None
         self.eps = None
         self.roc_stats = None
@@ -126,13 +126,13 @@ class EpsExperimentPlot():
             self.roc_stats = [(x[0], x[1]) if x[1] > 0.5 else (x[0], (1-x[1])) for x in self.roc_stats]
         self.add_to_eps_plot(label_suffix, **plt_kwargs)
 
-    def set_legend_and_highlight_eps(self, eps_idxs=[], legend_loc=(0.72,0.8), h_line=False):
+    def set_legend_and_highlight_eps(self, eps_idxs=[], legend_loc=(0.72,0.8), h_line=False, label_h='MLS AUROC'):
         for i in eps_idxs:
             self.ax1.axvline(round(self.recent_eps[i],2), 0, 1, linestyle='dashed', c='gray', alpha=0.5)
             if self.add_zoom:
                 self.axins.axvline(self.recent_eps[i], 0, 1, linestyle='dashed', c='gray', alpha=0.5)
         if h_line:
-            self.ax1.axhline(h_line, 0, 1, linestyle = 'dashed', c='salmon', alpha=0.5, label='MLS AUROC')
+            self.ax1.axhline(h_line, 0, 1, linestyle = 'dashed', c='salmon', alpha=0.5, label=label_h)
             if self.add_zoom:
                 self.axins.axhline(h_line, 0, 1, linestyle = 'dashed', c='salmon', alpha=0.5)
         chosen_eps = [self.recent_eps[i] for i in eps_idxs]
