@@ -127,10 +127,15 @@ class EpsExperimentPlot():
         self.add_to_eps_plot(label_suffix, **plt_kwargs)
 
     def set_legend_and_highlight_eps(self, eps_idxs=[], legend_loc=(0.72,0.8), h_line=False, label_h='MLS AUROC'):
+        added_legend = False
         for i in eps_idxs:
-            self.ax1.axvline(round(self.recent_eps[i],2), 0, 1, linestyle='dashed', c='gray', alpha=0.5)
+            if added_legend:
+                self.ax1.axvline(round(self.recent_eps[i],2), 0, 1, linestyle=(0, (1, 5)), c='gray', alpha=1)
+            else:
+                self.ax1.axvline(round(self.recent_eps[i],2), 0, 1, linestyle=(0, (1, 5)), c='gray',label= 'Selected $\\epsilon$-values', alpha=1)
+                added_legend = True
             if self.add_zoom:
-                self.axins.axvline(self.recent_eps[i], 0, 1, linestyle='dashed', c='gray', alpha=0.5)
+                self.axins.axvline(self.recent_eps[i], 0, 1, linestyle='dotted', c='gray', alpha=0.5)
         if h_line:
             self.ax1.axhline(h_line, 0, 1, linestyle = 'dashed', c='salmon', alpha=0.5, label=label_h)
             if self.add_zoom:
