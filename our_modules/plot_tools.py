@@ -56,7 +56,7 @@ def plot_image_i(i, dataset, mean, std, save_path=False, **plt_kwargs):
 
 
 class EpsExperimentPlot():
-    def __init__(self, eps_figsize=(10,4), adv_fisize=(15,6), which_lines='both', add_zoom=(-0.003, 0.012, 0.825, 0.84), mls_title='Average MLS - $\\mathcal{S}\\:(y\\in\\mathcal{F}\\mid x)$'):
+    def __init__(self, eps_figsize=(10,4), adv_fisize=(15,6), which_lines='both', add_zoom=(-0.003, 0.012, 0.825, 0.84), mls_title='Average MLS'):
         self.which_lines = which_lines
         self.add_zoom = add_zoom
         eps_fig, eps_ax = plt.subplots(1,1, figsize=eps_figsize)
