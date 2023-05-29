@@ -239,7 +239,7 @@ def plot_diff_stats_for_eps(path_plain_logits, path_to_attack_folder, path_csr_t
 def plot_adv_imgs(eps, adv_imgs, adv_steps, mean, std, figsize=(15,10), save_path=None):
     img_stack = torch.vstack((adv_imgs[None], adv_steps[None]))
     num_imgs = len(adv_imgs)
-    fig, axs = plt.subplots(2, num_imgs, figsize=(num_imgs * 4, 9))
+    fig, axs = plt.subplots(2, num_imgs, figsize=((num_imgs*4) / 1.8, 9 / 1.8))
     if len(axs.shape) == 1:
         axs = axs[:, None]
     for i in range(2):
