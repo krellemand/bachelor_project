@@ -196,7 +196,7 @@ class IdOodPlot():
         if ylabel:
             self.ax.set_ylabel(ylabel)
 
-    def make_scatter_plot(self, window_size=5,figsize=(6,6), xlabel=r'$\mathcal{S}$ - Maximum Logit Score (MLS)', ylabel=r'Gradient Norm - $\mathbb{E}\:\left[||\:\nabla_{\bf{x}} \log S_{\hat{y}}({\bf{x}}) \:||_1 \mid \mathcal{S}\:\right]$'):
+    def make_scatter_plot(self, window_size=5,figsize=(6,6), xlabel=r'MLS of Unmodified Images', ylabel=r'Gradient Norm - $\mathbb{E}\:\left[||\:\nabla_{\bf{x}} \log S_{\hat{y}}({\bf{x}}) \:||_1 \mid \mathcal{S}\:\right]$'):
         self.fig, self.ax = plt.subplots(1,1, figsize=figsize)
         self.ax.scatter(self.id_xs, self.id_ys, alpha=0.2, c='cornflowerblue')
         self.ax.scatter(self.ood_xs, self.ood_ys, alpha=0.2, c='salmon')
@@ -234,7 +234,7 @@ def plot_diff_stats_for_eps(path_plain_logits, path_to_attack_folder, path_csr_t
     ax.axvline(eps_list[highlight_eps_idx], 0, 1, linestyle='dashed', c='gray', alpha=0.5, label=f'$\epsilon$ = {eps_list[highlight_eps_idx]:.2}')
     ax.legend()
     ax.set_xlabel('$\\epsilon$ - Size of the Advesarial Perturbation.')
-    ax.set_ylabel(r'Signed Maximum Logit Change;  $\mathcal{S}_{adv} - \mathcal{S}$')
+    ax.set_ylabel(r'ARS')
     if save_path:
         plt.savefig(save_path + '.pdf', transparent=True, bbox_inches='tight')
     plt.show()
