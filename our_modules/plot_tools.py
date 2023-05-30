@@ -188,10 +188,13 @@ class IdOodPlot():
         self.ood_ys = [gn for gn, _ in ood_stats]
         self.ood_xs = [s for _, s in ood_stats]
 
-    def make_boxplot(self, figsize=(6,6), ylabel='', **boxplot_kwargs):
+    def make_boxplot(self, figsize=(6,6), ylabel=False,xlabel=False, **boxplot_kwargs):
         self.fig, self.ax = plt.subplots(1,1, figsize=figsize)
         self.ax.boxplot((self.id_ys, self.ood_ys), **boxplot_kwargs)
-        self.ax.set_ylabel(ylabel)
+        if xlabel:
+            self.ax.set_xlabel(xlabel)
+        if ylabel:
+            self.ax.set_ylabel(ylabel)
 
     def make_scatter_plot(self, window_size=5,figsize=(6,6), xlabel=r'$\mathcal{S}$ - Maximum Logit Score (MLS)', ylabel=r'Gradient Norm - $\mathbb{E}\:\left[||\:\nabla_{\bf{x}} \log S_{\hat{y}}({\bf{x}}) \:||_1 \mid \mathcal{S}\:\right]$'):
         self.fig, self.ax = plt.subplots(1,1, figsize=figsize)
