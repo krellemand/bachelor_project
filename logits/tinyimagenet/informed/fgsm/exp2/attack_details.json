@@ -1,4 +1,4 @@
 {
     "FN attack path": "/Users/gunder/Desktop/bachelor_project/logits/tinyimagenet/plain/",
-    "FP attack path": "/Users/gunder/Desktop/bachelor_project/logits/tinyimagenet/fp/fgsm/two_norm/eps_0.0622/"
+    "FP attack path": "/Users/gunder/Desktop/bachelor_project/logits/tinyimagenet/fp/fgsm/two_norm/eps_0.0418/"
 }

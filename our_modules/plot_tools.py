@@ -27,7 +27,6 @@ def plot_image_on_ax(ax, normalized_img, mean, std, channel=None, **plt_kwargs):
     img = normalized_img*np.array(std)[:, None, None] + np.array(mean)[:, None, None]
     if channel is not None:
         img = img[channel][None]
-        print(img.shape)
         c = 'binary'
     img = np.clip(img.permute(1,2,0).numpy(), 0, 1)
     ax.imshow(img, cmap=c, **plt_kwargs)
@@ -56,7 +55,7 @@ def plot_image_i(i, dataset, mean, std, save_path=False, **plt_kwargs):
 
 
 class EpsExperimentPlot():
-    def __init__(self, eps_figsize=(10,4), adv_fisize=(15,6), which_lines='both', add_zoom=(-0.003, 0.012, 0.825, 0.84), mls_title='Average MLS'):
+    def __init__(self, eps_figsize=(10,4), adv_fisize=(15,6), which_lines='both', add_zoom=(-0.003, 0.012, 0.825, 0.84), mls_title='Median MLS'):
         self.which_lines = which_lines
         self.add_zoom = add_zoom
         eps_fig, eps_ax = plt.subplots(1,1, figsize=eps_figsize)
@@ -77,17 +76,17 @@ class EpsExperimentPlot():
         self.recent_eps = None
         self.eps = None
         self.roc_stats = None
-        self.avg_scores = None
+        self.median_scores = None
 
     def load_mls_stats(self, path_to_eps_dirs, split_num, balance=True, dataset_name='tinyimagenet', max_eps=None):
-        self.eps, self.roc_stats, self.avg_scores = load_and_eval_mls_osr_for_all_eps(path_to_eps_dirs, split_num, dataset_name=dataset_name, balance=balance, return_avg_mls=True)
+        self.eps, self.roc_stats, self.median_scores = load_and_eval_mls_osr_for_all_eps(path_to_eps_dirs, split_num, dataset_name=dataset_name, balance=balance, return_avg_mls=True)
         if max_eps is not None:
-            data = [(eps, roc_stats, avg_scores) for eps, roc_stats, avg_scores in zip(self.eps, self.roc_stats, self.avg_scores) if eps < max_eps]
-            self.eps, self.roc_stats, self.avg_scores = tuple(zip(*data))
+            data = [(eps, roc_stats, median_scores) for eps, roc_stats, median_scores in zip(self.eps, self.roc_stats, self.median_scores) if eps < max_eps]
+            self.eps, self.roc_stats, self.median_scores = tuple(zip(*data))
 
 
     def load_logit_change_stats(self, path_to_eps_dirs, path_to_plain_logit_file, split_num, similarity_func=lambda after, before: torch.amax(after, dim=-1) - torch.amax(before, dim=-1), balance=True, dataset_name='tinyimagenet'):
-        self.eps, self.roc_stats, self.avg_scores = load_and_eval_logit_change_scores_for_all_eps(path_to_eps_dirs, path_to_plain_logit_file, split_num, similarity_func=similarity_func, dataset_name=dataset_name, balance=balance, return_avg_score=True)
+        self.eps, self.roc_stats, self.median_scores = load_and_eval_logit_change_scores_for_all_eps(path_to_eps_dirs, path_to_plain_logit_file, split_num, similarity_func=similarity_func, dataset_name=dataset_name, balance=balance, return_avg_score=True)
    
     def add_to_eps_plot(self, label_suffix='', **plt_kwargs):
         aurocs = [x[1] for x in self.roc_stats]
@@ -96,15 +95,15 @@ class EpsExperimentPlot():
             self.ax1.plot(self.eps, aurocs, c='red', label='AUROC' + label_suffix)
             if self.add_zoom:
                 self.axins.plot(self.eps, aurocs, c='red')
-            self.ax2.plot(self.eps, self.avg_scores, c='blue', label='Average OSR Score' + label_suffix)
+            self.ax2.plot(self.eps, self.median_scores, c='blue', label='Median OSR Score' + label_suffix)
             if self.add_zoom:
-                self.axins.plot(self.eps, self.avg_scores, c='blue')
+                self.axins.plot(self.eps, self.median_scores, c='blue')
         if self.which_lines == 'AUROC':
             self.ax1.plot(self.eps, aurocs, label=label_suffix, **plt_kwargs)
             if self.add_zoom:
                 self.axins.plot(self.eps, aurocs, **plt_kwargs)
         if self.which_lines == 'mls':
-            self.ax2.plot(self.eps, self.avg_scores, label=label_suffix, **plt_kwargs)
+            self.ax2.plot(self.eps, self.median_scores, label=label_suffix, **plt_kwargs)
             if self.add_zoom:
                 self.axins.plot(self.eps, aurocs, **plt_kwargs)
         if self.add_zoom:
@@ -308,3 +307,108 @@ def plot_ranked_scores(path_to_logits, path_to_csr_targets, score_func=lambda ls
     if save_path:
         plt.savefig(save_path + '.pdf', bbox_inches='tight')
     plt.show()
+
+
+class EpsExperimentPlotMedian():
+    def __init__(self, eps_figsize=(10,4), adv_fisize=(15,6), which_lines='both', add_zoom=(-0.003, 0.012, 0.825, 0.84), mls_title='Median MLS'):
+        self.which_lines = which_lines
+        self.add_zoom = add_zoom
+        eps_fig, eps_ax = plt.subplots(1,1, figsize=eps_figsize)
+        self.fig = eps_fig
+        self.ax1 = eps_ax
+        self.ax1.set_xlabel('$\\epsilon$ - Size of the Advesarial Perturbation.')
+        self.ax1.set_ylabel('AUROC', c='black')
+        if self.add_zoom:
+            self.axins = zoomed_inset_axes(self.ax1, 10, loc=1)
+        if self.which_lines == 'both':
+            self.ax1.set_xlabel('$\\epsilon$ - Size of the Advesarial Perturbation.')
+            self.ax1.set_ylabel('AUROC', c='red')
+            self.ax2 = eps_ax.twinx()
+            self.ax2.set_ylabel(mls_title, c='blue')
+        if self.which_lines == 'mls':
+            self.ax2 = self.ax1
+            self.ax2.set_ylabel(mls_title, c='black')
+        self.recent_eps = None
+        self.eps = None
+        self.roc_stats = None
+        self.avg_scores = None
+
+    def load_mls_stats(self, path_to_eps_dirs, split_num, balance=True, dataset_name='tinyimagenet', max_eps=None):
+        self.eps, self.roc_stats, self.avg_scores = load_and_eval_mls_osr_for_all_eps(path_to_eps_dirs, split_num, dataset_name=dataset_name, balance=balance, return_avg_mls=True, return_quantiles=True )
+        if max_eps is not None:
+            data = [(eps, roc_stats, avg_scores) for eps, roc_stats, avg_scores in zip(self.eps, self.roc_stats, self.avg_scores) if eps < max_eps]
+            self.eps, self.roc_stats, self.avg_scores = tuple(zip(*data))
+
+
+    def load_logit_change_stats(self, path_to_eps_dirs, path_to_plain_logit_file, split_num, similarity_func=lambda after, before: torch.amax(after, dim=-1) - torch.amax(before, dim=-1), balance=True, dataset_name='tinyimagenet'):
+        self.eps, self.roc_stats, self.avg_scores = load_and_eval_logit_change_scores_for_all_eps(path_to_eps_dirs, path_to_plain_logit_file, split_num, similarity_func=similarity_func, dataset_name=dataset_name, balance=balance, return_avg_score=True)
+   
+    def add_to_eps_plot(self, label_suffix='', **plt_kwargs):
+        self.avg_scores = np.transpose(np.stack(self.avg_scores, axis = 0))
+        aurocs = [x[1] for x in self.roc_stats]
+        self.recent_eps = np.array(self.eps)
+        if self.which_lines == 'both':
+            self.ax1.plot(self.eps, aurocs, c='red', label='AUROC' + label_suffix)
+            if self.add_zoom:
+                self.axins.plot(self.eps, aurocs, c='red')
+            self.ax2.plot(self.eps, self.avg_scores, c='blue', label='Median OSR Score' + label_suffix)
+            if self.add_zoom:
+                self.axins.plot(self.eps, self.avg_scores, c='blue')
+        if self.which_lines == 'AUROC':
+            self.ax1.plot(self.eps, aurocs, label=label_suffix, **plt_kwargs)
+            if self.add_zoom:
+                self.axins.plot(self.eps, aurocs, **plt_kwargs)
+        if self.which_lines == 'mls':
+            self.ax2.plot(self.eps, self.avg_scores[0],c = 'green',alpha =0.2, **plt_kwargs)
+            self.ax2.plot(self.eps, self.avg_scores[1],c = 'green', label=label_suffix,alpha =1, **plt_kwargs)
+            self.ax2.plot(self.eps, self.avg_scores[2],c = 'green', alpha =0.2, **plt_kwargs)
+            self.ax2.fill_between(self.eps, self.avg_scores[0], self.avg_scores[2], color='green', alpha=0.1)
+            if self.add_zoom:
+                self.axins.plot(self.eps, aurocs, **plt_kwargs)
+        if self.add_zoom:
+            self.axins.set_xlim(self.add_zoom[0], self.add_zoom[1])
+            self.axins.set_ylim(self.add_zoom[2], self.add_zoom[3])
+            mark_inset(self.ax1, self.axins, loc1=2, loc2=3, fc="none", ec="0.5")
+
+    def load_and_add_mls_to_eps_plot(self, path_to_eps_dirs, split_num, balance=True, label_suffix='', 
+                                     dataset_name='tinyimagenet', max_eps=None, invert_auroc=False, **plt_kwargs):
+        self.load_mls_stats(path_to_eps_dirs, split_num, balance=balance, dataset_name=dataset_name, max_eps=max_eps)
+        self.add_to_eps_plot(label_suffix=label_suffix, **plt_kwargs)
+
+    def load_and_add_logit_change_to_eps_plot(self, path_to_eps_dirs, path_to_plain_logit_file, split_num, 
+                                              similarity_func=lambda after, before: torch.amax(after, dim=-1) - torch.amax(before, dim=-1), 
+                                              balance=True, label_suffix='', dataset_name='tinyimagenet', invert_auroc=False, **plt_kwargs):
+        self.load_logit_change_stats(path_to_eps_dirs, path_to_plain_logit_file, split_num, similarity_func=similarity_func, 
+                                     balance=balance, dataset_name=dataset_name)
+        if invert_auroc:
+            self.roc_stats = [(x[0], x[1]) if x[1] > 0.5 else (x[0], (1-x[1])) for x in self.roc_stats]
+        self.add_to_eps_plot(label_suffix, **plt_kwargs)
+
+    def set_legend_and_highlight_eps(self, eps_idxs=[], legend_loc=(0.72,0.8), h_line=False, label_h='MLS AUROC'):
+        added_legend = False
+        for i in eps_idxs:
+            if added_legend:
+                self.ax1.axvline(round(self.recent_eps[i],2), 0, 1, linestyle=(0, (1, 5)), c='gray', alpha=1)
+            else:
+                self.ax1.axvline(round(self.recent_eps[i],2), 0, 1, linestyle=(0, (1, 5)), c='gray',label= 'Selected $\\epsilon$-values', alpha=1)
+                added_legend = True
+            if self.add_zoom:
+                self.axins.axvline(self.recent_eps[i], 0, 1, linestyle='dotted', c='gray', alpha=0.5)
+        if h_line:
+            self.ax1.axhline(h_line, 0, 1, linestyle = 'dashed', c='salmon', alpha=0.5, label=label_h)
+            if self.add_zoom:
+                self.axins.axhline(h_line, 0, 1, linestyle = 'dashed', c='salmon', alpha=0.5)
+        chosen_eps = [self.recent_eps[i] for i in eps_idxs]
+        # if np.isclose(chosen_eps[0], chosen_eps[1], rtol=0.0, atol=0.2):
+        #     chosen_eps = chosen_eps[1:]
+        locs, labels = plt.xticks()
+        locs = locs[1:-1]
+        locs = [l for l in locs if not np.isclose(l, chosen_eps, rtol=0.0, atol=0.05).any()]
+        locs += chosen_eps
+        plt.xticks([round(l, 2) for l in locs])
+        self.fig.legend(loc=legend_loc)
+
+    def show_and_save(self, save_path=False):
+        if save_path:
+            plt.savefig(save_path + '.pdf', bbox_inches='tight')
+        plt.show()
