@@ -55,7 +55,7 @@ def plot_image_i(i, dataset, mean, std, save_path=False, **plt_kwargs):
 
 
 class EpsExperimentPlot():
-    def __init__(self, eps_figsize=(10,4), adv_fisize=(15,6), which_lines='both', add_zoom=(-0.003, 0.012, 0.825, 0.84), mls_title='Median MLS'):
+    def __init__(self, eps_figsize=(10,4), adv_fisize=(15,6), which_lines='both', add_zoom=(-0.003, 0.012, 0.825, 0.84), mls_title='MLS', loc_zoom = 5):
         self.which_lines = which_lines
         self.add_zoom = add_zoom
         eps_fig, eps_ax = plt.subplots(1,1, figsize=eps_figsize)
@@ -64,7 +64,7 @@ class EpsExperimentPlot():
         self.ax1.set_xlabel('$\\epsilon$ - Size of the Advesarial Perturbation.')
         self.ax1.set_ylabel('AUROC', c='black')
         if self.add_zoom:
-            self.axins = zoomed_inset_axes(self.ax1, 10, loc=1)
+            self.axins = zoomed_inset_axes(self.ax1, 10, loc=loc_zoom)
         if self.which_lines == 'both':
             self.ax1.set_xlabel('$\\epsilon$ - Size of the Advesarial Perturbation.')
             self.ax1.set_ylabel('AUROC', c='red')
@@ -95,7 +95,7 @@ class EpsExperimentPlot():
             self.ax1.plot(self.eps, aurocs, c='red', label='AUROC' + label_suffix)
             if self.add_zoom:
                 self.axins.plot(self.eps, aurocs, c='red')
-            self.ax2.plot(self.eps, self.median_scores, c='blue', label='Median OSR Score' + label_suffix)
+            self.ax2.plot(self.eps, self.median_scores, c='blue', label='OSR Score' + label_suffix)
             if self.add_zoom:
                 self.axins.plot(self.eps, self.median_scores, c='blue')
         if self.which_lines == 'AUROC':
@@ -131,7 +131,7 @@ class EpsExperimentPlot():
             if added_legend:
                 self.ax1.axvline(round(self.recent_eps[i],2), 0, 1, linestyle=(0, (1, 5)), c='gray', alpha=1)
             else:
-                self.ax1.axvline(round(self.recent_eps[i],2), 0, 1, linestyle=(0, (1, 5)), c='gray',label= 'Selected $\\epsilon$-values', alpha=1)
+                self.ax1.axvline(round(self.recent_eps[i],2), 0, 1, linestyle=(0, (1, 5)), c='gray',label= 'Selected $\\epsilon$-Values', alpha=1)
                 added_legend = True
             if self.add_zoom:
                 self.axins.axvline(self.recent_eps[i], 0, 1, linestyle='dotted', c='gray', alpha=0.5)
@@ -310,7 +310,7 @@ def plot_ranked_scores(path_to_logits, path_to_csr_targets, score_func=lambda ls
 
 
 class EpsExperimentPlotMedian():
-    def __init__(self, eps_figsize=(10,4), adv_fisize=(15,6), which_lines='both', add_zoom=(-0.003, 0.012, 0.825, 0.84), mls_title='Median MLS'):
+    def __init__(self, eps_figsize=(10,4), adv_fisize=(15,6), which_lines='both', add_zoom=(-0.003, 0.012, 0.825, 0.84), mls_title='MLS'):
         self.which_lines = which_lines
         self.add_zoom = add_zoom
         eps_fig, eps_ax = plt.subplots(1,1, figsize=eps_figsize)
@@ -351,7 +351,7 @@ class EpsExperimentPlotMedian():
             self.ax1.plot(self.eps, aurocs, c='red', label='AUROC' + label_suffix)
             if self.add_zoom:
                 self.axins.plot(self.eps, aurocs, c='red')
-            self.ax2.plot(self.eps, self.avg_scores, c='blue', label='Median OSR Score' + label_suffix)
+            self.ax2.plot(self.eps, self.avg_scores, c='blue', label='OSR Score' + label_suffix)
             if self.add_zoom:
                 self.axins.plot(self.eps, self.avg_scores, c='blue')
         if self.which_lines == 'AUROC':
@@ -390,7 +390,7 @@ class EpsExperimentPlotMedian():
             if added_legend:
                 self.ax1.axvline(round(self.recent_eps[i],2), 0, 1, linestyle=(0, (1, 5)), c='gray', alpha=1)
             else:
-                self.ax1.axvline(round(self.recent_eps[i],2), 0, 1, linestyle=(0, (1, 5)), c='gray',label= 'Selected $\\epsilon$-values', alpha=1)
+                self.ax1.axvline(round(self.recent_eps[i],2), 0, 1, linestyle=(0, (1, 5)), c='gray',label= 'Selected $\\epsilon$-Values', alpha=1)
                 added_legend = True
             if self.add_zoom:
                 self.axins.axvline(self.recent_eps[i], 0, 1, linestyle='dotted', c='gray', alpha=0.5)
