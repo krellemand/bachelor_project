@@ -78,8 +78,8 @@ class EpsExperimentPlot():
         self.roc_stats = None
         self.median_scores = None
 
-    def load_mls_stats(self, path_to_eps_dirs, split_num, balance=True, dataset_name='tinyimagenet', max_eps=None):
-        self.eps, self.roc_stats, self.median_scores = load_and_eval_mls_osr_for_all_eps(path_to_eps_dirs, split_num, dataset_name=dataset_name, balance=balance, return_avg_mls=True)
+    def load_mls_stats(self, path_to_eps_dirs, split_num, balance=True, dataset_name='tinyimagenet', max_eps=None, msp=False):
+        self.eps, self.roc_stats, self.median_scores = load_and_eval_mls_osr_for_all_eps(path_to_eps_dirs, split_num, dataset_name=dataset_name, balance=balance, return_avg_mls=True, msp=msp)
         if max_eps is not None:
             data = [(eps, roc_stats, median_scores) for eps, roc_stats, median_scores in zip(self.eps, self.roc_stats, self.median_scores) if eps < max_eps]
             self.eps, self.roc_stats, self.median_scores = tuple(zip(*data))
@@ -112,8 +112,8 @@ class EpsExperimentPlot():
             mark_inset(self.ax1, self.axins, loc1=2, loc2=3, fc="none", ec="0.5")
 
     def load_and_add_mls_to_eps_plot(self, path_to_eps_dirs, split_num, balance=True, label_suffix='', 
-                                     dataset_name='tinyimagenet', max_eps=None, invert_auroc=False, **plt_kwargs):
-        self.load_mls_stats(path_to_eps_dirs, split_num, balance=balance, dataset_name=dataset_name, max_eps=max_eps)
+                                     dataset_name='tinyimagenet', max_eps=None, invert_auroc=False,msp=False, **plt_kwargs):
+        self.load_mls_stats(path_to_eps_dirs, split_num, balance=balance, dataset_name=dataset_name, max_eps=max_eps, msp=msp)
         self.add_to_eps_plot(label_suffix=label_suffix, **plt_kwargs)
 
     def load_and_add_logit_change_to_eps_plot(self, path_to_eps_dirs, path_to_plain_logit_file, split_num, 

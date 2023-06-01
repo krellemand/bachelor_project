@@ -55,12 +55,15 @@ def eval_osr_quantiles(osr_scores, osr_targets, balance=True, return_avg_score=F
         return osr_roc_stats(osr_scores, osr_targets), np.quantile(osr_scores,[0.25, 0.5, 0.75])
     return osr_roc_stats(osr_scores, osr_targets)
 
-def load_and_eval_mls_osr(logit_file_path, csr_targets_file_path, split_num, dataset_name='tinyimagenet', balance=True, return_avg_mls=False, return_quantiles=False):
+def load_and_eval_mls_osr(logit_file_path, csr_targets_file_path, split_num, dataset_name='tinyimagenet', balance=True, return_avg_mls=False, return_quantiles=False, msp=False):
     assert int(logit_file_path[-4]) == split_num, "The split_num does not correspond to the split num of the file name"
     split = osr_splits[dataset_name][split_num]
     logits = torch.load(logit_file_path)
     csr_targets = torch.load(csr_targets_file_path)
     mls_scores = mls_osr_score(logits)
+    if msp:
+        mls_scores = torch.amax(torch.softmax(logits, dim = 1), dim=-1)
+        print('allert msp')
     open_set_labels = get_osr_targets(csr_targets, split)
     if return_quantiles:
         return eval_osr_quantiles(mls_scores, open_set_labels, balance=balance, return_avg_score=return_avg_mls)
@@ -85,7 +88,7 @@ def load_and_eval_mls_osr(logit_file_path, csr_targets_file_path, split_num, dat
 
 
 
-def load_and_eval_mls_osr_for_all_eps(path_to_eps_dirs, split_num, dataset_name='tinyimagenet', balance=True, return_avg_mls=False, return_quantiles=False):
+def load_and_eval_mls_osr_for_all_eps(path_to_eps_dirs, split_num, dataset_name='tinyimagenet', balance=True, return_avg_mls=False, return_quantiles=False, msp=False):
     eps_dir_list = [dir_name for dir_name in os.listdir(path_to_eps_dirs) if dir_name[:3] == 'eps']
     eps_list = [float(dir_name[4:]) for dir_name in eps_dir_list]
     roc_stats = []
@@ -97,7 +100,8 @@ def load_and_eval_mls_osr_for_all_eps(path_to_eps_dirs, split_num, dataset_name=
                                                dataset_name=dataset_name,
                                                balance=balance,
                                                return_avg_mls=return_avg_mls,
-                                               return_quantiles=return_quantiles)
+                                               return_quantiles=return_quantiles,
+                                               msp=msp)
         if return_avg_mls:
             roc_stat_tuple, avg_mls = stats
             avg_mls_list += avg_mls,
