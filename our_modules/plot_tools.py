@@ -136,7 +136,7 @@ class EpsExperimentPlot():
             if self.add_zoom:
                 self.axins.axvline(self.recent_eps[i], 0, 1, linestyle='dotted', c='gray', alpha=0.5)
         if h_line:
-            self.ax1.axhline(h_line, 0, 1, linestyle = 'dashed', c='salmon', alpha=0.5, label=label_h)
+            self.ax1.axhline(h_line, 0, 1, linestyle = 'dashed', c='gray', alpha=0.5, label=label_h)
             if self.add_zoom:
                 self.axins.axhline(h_line, 0, 1, linestyle = 'dashed', c='salmon', alpha=0.5)
         chosen_eps = [self.recent_eps[i] for i in eps_idxs]
@@ -359,10 +359,10 @@ class EpsExperimentPlotMedian():
             if self.add_zoom:
                 self.axins.plot(self.eps, aurocs, **plt_kwargs)
         if self.which_lines == 'mls':
-            self.ax2.plot(self.eps, self.avg_scores[0],c = 'green',alpha =0.2, **plt_kwargs)
-            self.ax2.plot(self.eps, self.avg_scores[1],c = 'green', label=label_suffix,alpha =1, **plt_kwargs)
-            self.ax2.plot(self.eps, self.avg_scores[2],c = 'green', alpha =0.2, **plt_kwargs)
-            self.ax2.fill_between(self.eps, self.avg_scores[0], self.avg_scores[2], color='green', alpha=0.1)
+            self.ax2.plot(self.eps, self.avg_scores[0],alpha =0.2, **plt_kwargs)
+            self.ax2.plot(self.eps, self.avg_scores[1], label=label_suffix,alpha =1, **plt_kwargs)
+            self.ax2.plot(self.eps, self.avg_scores[2], alpha =0.2, **plt_kwargs)
+            self.ax2.fill_between(self.eps, self.avg_scores[0], self.avg_scores[2], color=plt_kwargs['c'], alpha=0.1)
             if self.add_zoom:
                 self.axins.plot(self.eps, aurocs, **plt_kwargs)
         if self.add_zoom:
@@ -395,7 +395,7 @@ class EpsExperimentPlotMedian():
             if self.add_zoom:
                 self.axins.axvline(self.recent_eps[i], 0, 1, linestyle='dotted', c='gray', alpha=0.5)
         if h_line:
-            self.ax1.axhline(h_line, 0, 1, linestyle = 'dashed', c='salmon', alpha=0.5, label=label_h)
+            self.ax1.axhline(h_line, 0, 1, linestyle = 'dashed', c='gray', alpha=0.5, label=label_h)
             if self.add_zoom:
                 self.axins.axhline(h_line, 0, 1, linestyle = 'dashed', c='salmon', alpha=0.5)
         chosen_eps = [self.recent_eps[i] for i in eps_idxs]
