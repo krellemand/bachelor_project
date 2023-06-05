@@ -125,7 +125,7 @@ class EpsExperimentPlot():
             self.roc_stats = [(x[0], x[1]) if x[1] > 0.5 else (x[0], (1-x[1])) for x in self.roc_stats]
         self.add_to_eps_plot(label_suffix, **plt_kwargs)
 
-    def set_legend_and_highlight_eps(self, eps_idxs=[], legend_loc=(0.72,0.8), h_line=False, label_h='MLS AUROC'):
+    def set_legend_and_highlight_eps(self, eps_idxs=[], legend_loc=(0.72,0.8), h_line=False, label_h='MLS AUROC on $\mathcal{D}_{test}$'):
         added_legend = False
         for i in eps_idxs:
             if added_legend:
