@@ -195,7 +195,7 @@ class IdOodPlot():
         if ylabel:
             self.ax.set_ylabel(ylabel)
 
-    def make_scatter_plot(self, window_size=5,figsize=(6,6), xlabel=r'MLS of Unmodified Images', ylabel=r'Gradient Norm - $\mathbb{E}\:\left[||\:\nabla_{\bf{x}} \log S_{\hat{y}}({\bf{x}}) \:||_1 \mid \mathcal{S}\:\right]$'):
+    def make_scatter_plot(self, window_size=5,figsize=(30,6), xlabel=r'MLS of Unmodified Images', ylabel=r'Gradient Norm - $\mathbb{E}\:\left[||\:\nabla_{\bf{x}} \log S_{\hat{y}}({\bf{x}}) \:||_1 \mid \mathcal{S}\:\right]$'):
         self.fig, self.ax = plt.subplots(1,1, figsize=figsize)
         self.ax.scatter(self.id_xs, self.id_ys, alpha=0.2, c='cornflowerblue')
         self.ax.scatter(self.ood_xs, self.ood_ys, alpha=0.2, c='salmon')
@@ -216,7 +216,7 @@ class IdOodPlot():
 
     def show_and_save(self, save_path=False):
         if save_path:
-            plt.savefig(save_path + '.pdf', transparent=True, bbox_inches='tight')
+            plt.savefig(save_path + '.pdf', transparent=True)
         plt.show()
 
 
