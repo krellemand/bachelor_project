@@ -249,7 +249,7 @@ def plot_adv_imgs(eps, adv_imgs, adv_steps, mean, std, figsize=(15,10), save_pat
             plot_image_on_ax(axs[i, j], img_stack[i, j], mean, std)
             axs[i, j].axis('off')
             if i == 0:
-                axs[i, j].set_title((f"$\\epsilon = {eps[j]:.3}$"))
+                axs[i, j].set_title((f"$\\epsilon = {round(eps[j],2)}$"))
     fig.tight_layout()
     if save_path:
         plt.savefig(save_path + '.pdf', bbox_inches='tight')
