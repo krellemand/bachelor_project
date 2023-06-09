@@ -216,7 +216,7 @@ class IdOodPlot():
 
     def show_and_save(self, save_path=False):
         if save_path:
-            plt.savefig(save_path + '.pdf', transparent=True)
+            plt.savefig(save_path + '.pdf', transparent=True, bbox_inches = 'tight')
         plt.show()
 
 
