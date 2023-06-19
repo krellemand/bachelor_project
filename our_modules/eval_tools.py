@@ -16,6 +16,7 @@ def balance_binary(lst, bool_func, seed=777):
         true = random.sample(true, len(false))
     return true + false
 
+
 def osr_roc_stats(open_set_scores, open_set_labels):
     """
     Compute performance metrics based on the logits of
@@ -27,11 +28,14 @@ def osr_roc_stats(open_set_scores, open_set_labels):
     auroc = roc_auc_score(open_set_labels, open_set_scores)
     return (fprs, tprs, thresholds), auroc
 
+
 def mls_osr_score(logits):
     return torch.amax(logits, dim=-1) # In theory high osr score corresponds to known class. We however want novel to correspond to label 1 and thus the minus sign.
 
+
 def get_osr_targets(csr_targets, split_targets):
     return (~(sum(csr_targets == i for i in split_targets).bool()))
+
 
 def eval_osr(osr_scores, osr_targets, balance=True, return_avg_score=False):
     # print((sum(osr_targets)/len(osr_targets)).data) # Balance ratio before
@@ -42,6 +46,7 @@ def eval_osr(osr_scores, osr_targets, balance=True, return_avg_score=False):
     # print(sum(osr_targets)/len(osr_targets)) # Balance ratio after
     if return_avg_score:
         return osr_roc_stats(osr_scores, osr_targets), torch.median(osr_scores)
+ 
     return osr_roc_stats(osr_scores, osr_targets)
 
 def eval_osr_quantiles(osr_scores, osr_targets, balance=True, return_avg_score=False):
@@ -55,6 +60,7 @@ def eval_osr_quantiles(osr_scores, osr_targets, balance=True, return_avg_score=F
         return osr_roc_stats(osr_scores, osr_targets), np.quantile(osr_scores,[0.25, 0.5, 0.75])
     return osr_roc_stats(osr_scores, osr_targets)
 
+
 def load_and_eval_mls_osr(logit_file_path, csr_targets_file_path, split_num, dataset_name='tinyimagenet', balance=True, return_avg_mls=False, return_quantiles=False, msp=False):
     assert int(logit_file_path[-4]) == split_num, "The split_num does not correspond to the split num of the file name"
     split = osr_splits[dataset_name][split_num]
@@ -62,30 +68,12 @@ def load_and_eval_mls_osr(logit_file_path, csr_targets_file_path, split_num, dat
     csr_targets = torch.load(csr_targets_file_path)
     mls_scores = mls_osr_score(logits)
     if msp:
+        # V- THIS IS THE MSP NOT THE MLS BUT FOR NAMING SIMPLICITY IT IS CALLED MLS
         mls_scores = torch.amax(torch.softmax(logits, dim = 1), dim=-1)
-        print('allert msp')
     open_set_labels = get_osr_targets(csr_targets, split)
     if return_quantiles:
         return eval_osr_quantiles(mls_scores, open_set_labels, balance=balance, return_avg_score=return_avg_mls)
     return eval_osr(mls_scores, open_set_labels, balance=balance, return_avg_score=return_avg_mls)
-
-# def load_and_eval_mls_osr(logit_file_path, csr_targets_file_path, split_num, dataset_name='tinyimagenet', balance=False, return_avg_mls=False):
-#     assert int(logit_file_path[-4]) == split_num, "The split_num does not correspond to the split num of the file name"
-#     split = osr_splits[dataset_name][split_num]
-#     logits = torch.load(logit_file_path)
-#     csr_targets = torch.load(csr_targets_file_path)
-#     mls_scores = mls_osr_score(logits)
-#     open_set_labels = get_osr_targets(csr_targets, split)
-#     # print((sum(open_set_labels)/len(open_set_labels)).data) # Balance ratio before
-#     if balance:
-#         mls_oslabel = balance_binary(zip(mls_scores.tolist(), open_set_labels.tolist()), lambda x: bool(x[1]))
-#         mls_scores, open_set_labels = (torch.tensor([mls for mls, _ in mls_oslabel ]), 
-#                                        [oslabel for _, oslabel in mls_oslabel])
-#     # print(sum(open_set_labels)/len(open_set_labels)) # Balance ratio after
-#     if return_avg_mls:
-#         return osr_roc_stats(mls_scores, open_set_labels), -torch.mean(mls_scores)
-#     return osr_roc_stats(mls_scores, open_set_labels)
-
 
 
 def load_and_eval_mls_osr_for_all_eps(path_to_eps_dirs, split_num, dataset_name='tinyimagenet', balance=True, return_avg_mls=False, return_quantiles=False, msp=False):
@@ -119,6 +107,7 @@ def load_and_eval_mls_osr_for_all_eps(path_to_eps_dirs, split_num, dataset_name=
     roc_stats = [roc_stat for _, roc_stat in eps_roc]
     return eps_list, roc_stats
 
+
 def load_and_eval_logit_change_score(plain_logit_file_path, adv_logit_file_path, csr_targets_file_path, split_num,
                                      similarity_func=lambda after, before: torch.amax(after, dim=-1) - torch.amax(before, dim=-1),
                                      dataset_name='tinyimagenet', balance=True, return_avg_score=False):
@@ -130,6 +119,7 @@ def load_and_eval_logit_change_score(plain_logit_file_path, adv_logit_file_path,
     csr_targets = torch.load(csr_targets_file_path)
     osr_targets = get_osr_targets(csr_targets, split)
     return eval_osr(similarity_scores, osr_targets, balance=balance, return_avg_score=return_avg_score)
+
 
 def load_and_eval_logit_change_scores_for_all_eps(path_to_eps_dirs, path_to_plain_logit_file, split_num, similarity_func=lambda after, before: torch.amax(after, dim=-1) - torch.amax(before, dim=-1), dataset_name='tinyimagenet', balance=True, return_avg_score=False):
     eps_dir_list = [dir_name for dir_name in os.listdir(path_to_eps_dirs) if dir_name[:3] == 'eps']
@@ -162,6 +152,7 @@ def load_and_eval_logit_change_scores_for_all_eps(path_to_eps_dirs, path_to_plai
     roc_stats = [roc_stat for _, roc_stat in eps_roc]
     return eps_list, roc_stats
 
+
 def max_logit_change_compared_id_vs_ood(path_plain_logits, path_fn_logits, path_csr_targets, split_num, dataset_name='tinyimagenet'):
     split = osr_splits[dataset_name][split_num]
     csr_targets = torch.load(path_csr_targets)
@@ -175,21 +166,19 @@ def max_logit_change_compared_id_vs_ood(path_plain_logits, path_fn_logits, path_
     ood_stats = [(diff, mls_plain) for diff, target, mls_plain in zip(diffs, osr_targets, max_logit_plain) if target]
     return id_stats, ood_stats
 
+
 def get_grad_norm_stats(path_grad_norms, path_plain_logits, split_num, dataset_name='tinyimagenet', score_func=lambda x:torch.amax(x, dim=-1)):
     split = osr_splits[dataset_name][split_num]
-
     csr_targets = torch.load(path_grad_norms + 'csr_targets_' + str(split_num) + '.pt')
     osr_targets = get_osr_targets(csr_targets, split)
-
     plain_logits = torch.load(path_plain_logits + 'logits_' + str(split_num) + '.pt')
     osr_scores = score_func(plain_logits)
-
     grad_norms = torch.load(path_grad_norms + 'grad_norms_' + str(split_num) + '.pt')
-
     id_grad_norms = [(grad_norm, osr_score) for grad_norm, osr_score, target in zip(grad_norms, osr_scores, osr_targets) if not target]
     ood_grad_norms = [(grad_norm, osr_score) for grad_norm, osr_score, target in zip(grad_norms, osr_scores, osr_targets) if target]
 
     return id_grad_norms, ood_grad_norms
+
 
 def get_diff_stats_for_eps(path_plain_logits, path_to_attack_folder, path_csr_targets, split_num=0, dataset_name='tinyimagenet'):
     dirs = os.listdir(path_to_attack_folder)
