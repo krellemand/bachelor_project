@@ -5,6 +5,10 @@ import numpy as np
 import os
 import random
 
+# We changed the average to the median. 
+# Unfortunately some places it still says avg but the median is in fact calculated.
+
+# A function to balance a list based on a function that for each element returns true or false
 def balance_binary(lst, bool_func, seed=777):
     random.seed(seed)
     lst = list(lst)
@@ -17,26 +21,22 @@ def balance_binary(lst, bool_func, seed=777):
     return true + false
 
 
+#    Compute performance metrics based on the logits of an OSR model obtained by evaluating the model on a test set.
 def osr_roc_stats(open_set_scores, open_set_labels):
-    """
-    Compute performance metrics based on the logits of
-    an OSR model obtained by evaluating the model on a 
-    test set.
-    """
     open_set_scores = -open_set_scores
     fprs, tprs, thresholds = roc_curve(open_set_labels, open_set_scores, drop_intermediate=False)
     auroc = roc_auc_score(open_set_labels, open_set_scores)
     return (fprs, tprs, thresholds), auroc
 
-
+# Calculate MLS of logits
 def mls_osr_score(logits):
     return torch.amax(logits, dim=-1) # In theory high osr score corresponds to known class. We however want novel to correspond to label 1 and thus the minus sign.
 
-
+# Turn CSR targets into OSR targets (novel/familiar) based on the split
 def get_osr_targets(csr_targets, split_targets):
     return (~(sum(csr_targets == i for i in split_targets).bool()))
 
-
+# Evaluate the OSR performance of some OSR scores with given targets
 def eval_osr(osr_scores, osr_targets, balance=True, return_avg_score=False):
     # print((sum(osr_targets)/len(osr_targets)).data) # Balance ratio before
     if balance:
@@ -49,6 +49,7 @@ def eval_osr(osr_scores, osr_targets, balance=True, return_avg_score=False):
  
     return osr_roc_stats(osr_scores, osr_targets)
 
+# Same as above but returns quantiles
 def eval_osr_quantiles(osr_scores, osr_targets, balance=True, return_avg_score=False):
     # print((sum(osr_targets)/len(osr_targets)).data) # Balance ratio before
     if balance:
@@ -57,10 +58,11 @@ def eval_osr_quantiles(osr_scores, osr_targets, balance=True, return_avg_score=F
                                        [osr_target for _, osr_target in score_label_zipped])
     # print(sum(osr_targets)/len(osr_targets)) # Balance ratio after
     if return_avg_score:
-        return osr_roc_stats(osr_scores, osr_targets), np.quantile(osr_scores,[0.25, 0.5, 0.75])
+        return osr_roc_stats(osr_scores, osr_targets), np.quantile(osr_scores,[0.25, 0.5, 0.75]) # quantiles
     return osr_roc_stats(osr_scores, osr_targets)
 
 
+# A function to load the logits and evaluate the AUROC of the MLS
 def load_and_eval_mls_osr(logit_file_path, csr_targets_file_path, split_num, dataset_name='tinyimagenet', balance=True, return_avg_mls=False, return_quantiles=False, msp=False):
     assert int(logit_file_path[-4]) == split_num, "The split_num does not correspond to the split num of the file name"
     split = osr_splits[dataset_name][split_num]
@@ -75,7 +77,7 @@ def load_and_eval_mls_osr(logit_file_path, csr_targets_file_path, split_num, dat
         return eval_osr_quantiles(mls_scores, open_set_labels, balance=balance, return_avg_score=return_avg_mls)
     return eval_osr(mls_scores, open_set_labels, balance=balance, return_avg_score=return_avg_mls)
 
-
+# A function to load the logits and evaluate the AUROC of the MLS for all epsilon values
 def load_and_eval_mls_osr_for_all_eps(path_to_eps_dirs, split_num, dataset_name='tinyimagenet', balance=True, return_avg_mls=False, return_quantiles=False, msp=False):
     eps_dir_list = [dir_name for dir_name in os.listdir(path_to_eps_dirs) if dir_name[:3] == 'eps']
     eps_list = [float(dir_name[4:]) for dir_name in eps_dir_list]
@@ -108,6 +110,7 @@ def load_and_eval_mls_osr_for_all_eps(path_to_eps_dirs, split_num, dataset_name=
     return eps_list, roc_stats
 
 
+# A function to load logits for the ARS and evaluate it.
 def load_and_eval_logit_change_score(plain_logit_file_path, adv_logit_file_path, csr_targets_file_path, split_num,
                                      similarity_func=lambda after, before: torch.amax(after, dim=-1) - torch.amax(before, dim=-1),
                                      dataset_name='tinyimagenet', balance=True, return_avg_score=False):
@@ -121,6 +124,7 @@ def load_and_eval_logit_change_score(plain_logit_file_path, adv_logit_file_path,
     return eval_osr(similarity_scores, osr_targets, balance=balance, return_avg_score=return_avg_score)
 
 
+# A function to load logits for the ARS and evaluate it. Here for all epsilon values
 def load_and_eval_logit_change_scores_for_all_eps(path_to_eps_dirs, path_to_plain_logit_file, split_num, similarity_func=lambda after, before: torch.amax(after, dim=-1) - torch.amax(before, dim=-1), dataset_name='tinyimagenet', balance=True, return_avg_score=False):
     eps_dir_list = [dir_name for dir_name in os.listdir(path_to_eps_dirs) if dir_name[:3] == 'eps']
     eps_list = [float(dir_name[4:]) for dir_name in eps_dir_list]
@@ -153,6 +157,7 @@ def load_and_eval_logit_change_scores_for_all_eps(path_to_eps_dirs, path_to_plai
     return eps_list, roc_stats
 
 
+# Obtaining the ARS and MLS prior to the attack of the ARS for novel and familiar images separately.
 def max_logit_change_compared_id_vs_ood(path_plain_logits, path_fn_logits, path_csr_targets, split_num, dataset_name='tinyimagenet'):
     split = osr_splits[dataset_name][split_num]
     csr_targets = torch.load(path_csr_targets)
@@ -167,6 +172,7 @@ def max_logit_change_compared_id_vs_ood(path_plain_logits, path_fn_logits, path_
     return id_stats, ood_stats
 
 
+# Get gradient norms for novel and familiar images separately 
 def get_grad_norm_stats(path_grad_norms, path_plain_logits, split_num, dataset_name='tinyimagenet', score_func=lambda x:torch.amax(x, dim=-1)):
     split = osr_splits[dataset_name][split_num]
     csr_targets = torch.load(path_grad_norms + 'csr_targets_' + str(split_num) + '.pt')
@@ -179,7 +185,7 @@ def get_grad_norm_stats(path_grad_norms, path_plain_logits, split_num, dataset_n
 
     return id_grad_norms, ood_grad_norms
 
-
+# getting the stats used in our continous box plots (see for instance figure 23 in the thesis)
 def get_diff_stats_for_eps(path_plain_logits, path_to_attack_folder, path_csr_targets, split_num=0, dataset_name='tinyimagenet'):
     dirs = os.listdir(path_to_attack_folder)
     eps_list = []

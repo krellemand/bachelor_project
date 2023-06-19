@@ -35,7 +35,7 @@ mean = (0.4914, 0.4822, 0.4465)
 std = (0.2023, 0.1994, 0.2010)
 image_size=64
 
-# Paper
+# The normalization performed at test-time
 test_transform = transforms.Compose([
             transforms.Resize((image_size, image_size)),
             transforms.ToTensor(),
@@ -43,14 +43,12 @@ test_transform = transforms.Compose([
         ])
 
 # Min and max for image value after test transform is aplied
-# transform_range = (-2.429065704345703, 2.7537312507629395) # Original misunderstood clip range that clips across dimensions
 transform_min_max = [((0-mean)/std, (1-mean)/std) for mean, std in zip(mean, std)]
 transform_min_image = torch.zeros(3, 64, 64)
 transform_max_image = torch.zeros(3, 64, 64)
 for i in range(3):
     transform_min_image[i] = transform_min_max[i][0]
     transform_max_image[i] = transform_min_max[i][1]
-
 transform_range = (transform_min_image, transform_max_image)
 
 splits = osr_splits['tinyimagenet']
