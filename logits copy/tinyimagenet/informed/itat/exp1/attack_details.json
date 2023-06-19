@@ -1,0 +1,4 @@
+{
+    "FN attack path": "/Users/gunder/Desktop/bachelor_project/logits/tinyimagenet/fn/itat/max/eps_0.07/",
+    "FP attack path": "/Users/gunder/Desktop/bachelor_project/logits/tinyimagenet/fp/itat/two_norm/eps_0.07/"
+}

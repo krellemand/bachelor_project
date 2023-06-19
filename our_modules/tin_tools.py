@@ -19,11 +19,11 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 import json
 
 # imports from the paper
-from models.classifier32 import classifier32
-from utils.utils import strip_state_dict
-from data.tinyimagenet import subsample_classes
-from data.tinyimagenet import TinyImageNet
-from data.open_set_splits.osr_splits import osr_splits
+from classifier32 import classifier32
+from osr_closed_set_all_you_need_main.utils.utils import strip_state_dict
+from osr_closed_set_all_you_need_main.data.tinyimagenet import subsample_classes
+from osr_closed_set_all_you_need_main.data.tinyimagenet import TinyImageNet
+from osr_closed_set_all_you_need_main.data.open_set_splits.osr_splits import osr_splits
 
 # imports from our modules
 from our_modules.adv_tools import fgsm, fn_osr_fgsm, fp_osr_fgsm

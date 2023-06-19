@@ -12,7 +12,7 @@ from our_modules.eval_tools import get_diff_stats_for_eps
 from our_modules.eval_tools import get_osr_targets
 from our_modules.eval_tools import balance_binary
 
-from data.open_set_splits.osr_splits import osr_splits
+from osr_closed_set_all_you_need_main.data.open_set_splits.osr_splits import osr_splits
 
 def plot_roc(ax, roc_stats, **plt_kwargs):
     fprs, tprs, thresholds = roc_stats

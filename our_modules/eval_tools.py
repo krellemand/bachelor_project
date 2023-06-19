@@ -1,6 +1,6 @@
 from sklearn.metrics import roc_curve, roc_auc_score, accuracy_score, average_precision_score
 import torch
-from data.open_set_splits.osr_splits import osr_splits
+from osr_closed_set_all_you_need_main.data.open_set_splits.osr_splits import osr_splits
 import numpy as np
 import os
 import random
