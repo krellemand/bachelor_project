@@ -42,7 +42,7 @@ def plot_image(normalized_img, mean, std, channel=None, save_path=False, **plt_k
     plot_image_on_ax(ax, normalized_img.to('cpu'), mean=mean, std=std, channel=channel, **plt_kwargs)
     ax.axis('off')
     if save_path:
-        plt.savefig(save_path, bbox_inches='tight')
+        plt.savefig(save_path, bbox_inches='tight', dpi=180)
     plt.show()
 
 
@@ -55,7 +55,7 @@ def plot_image_i(i, dataset, mean, std, save_path=False, **plt_kwargs):
     plt.axis('off')
     # print(label, uq_idx)
     if save_path:
-        plt.savefig(save_path, bbox_inches='tight')
+        plt.savefig(save_path, bbox_inches='tight', dpi=180)
     plt.show()
 
 
@@ -164,7 +164,7 @@ class EpsExperimentPlot():
 
     def show_and_save(self, save_path=False):
         if save_path:
-            plt.savefig(save_path + '.pdf', bbox_inches='tight')
+            plt.savefig(save_path + '.png', bbox_inches='tight', dpi=180)
         plt.show()
 
 
@@ -237,7 +237,7 @@ class IdOodPlot():
 
     def show_and_save(self, save_path=False):
         if save_path:
-            plt.savefig(save_path + '.pdf', transparent=True, bbox_inches = 'tight')
+            plt.savefig(save_path + '.png', transparent=True, bbox_inches = 'tight', dpi=180)
         plt.show()
 
 
@@ -256,7 +256,7 @@ def plot_diff_stats_for_eps(path_plain_logits, path_to_attack_folder, path_csr_t
     ax.set_xlabel('$\\epsilon$ - Size of the Advesarial Perturbation.')
     ax.set_ylabel(r'ARS')
     if save_path:
-        plt.savefig(save_path + '.pdf', transparent=True, bbox_inches='tight')
+        plt.savefig(save_path + '.png', transparent=True, bbox_inches='tight', dpi=180)
     plt.show()
 
 
@@ -274,7 +274,7 @@ def plot_adv_imgs(eps, adv_imgs, adv_steps, mean, std, figsize=(15,10), save_pat
                 axs[i, j].set_title((f"$\\epsilon = {round(eps[j],2)}$"))
     fig.tight_layout()
     if save_path:
-        plt.savefig(save_path + '.pdf', bbox_inches='tight')
+        plt.savefig(save_path + '.png', bbox_inches='tight', dpi=180)
     plt.show()
 
 
@@ -329,7 +329,7 @@ def plot_ranked_scores(path_to_logits, path_to_csr_targets, score_func=lambda ls
         plt.ylim(ylim)
     plt.legend()
     if save_path:
-        plt.savefig(save_path + '.pdf', bbox_inches='tight')
+        plt.savefig(save_path + '.png', bbox_inches='tight', dpi=180)
     plt.show()
 
 
@@ -442,5 +442,5 @@ class EpsExperimentPlotMedian():
 
     def show_and_save(self, save_path=False):
         if save_path:
-            plt.savefig(save_path + '.pdf', bbox_inches='tight')
+            plt.savefig(save_path + '.png', bbox_inches='tight', dpi=180)
         plt.show()
