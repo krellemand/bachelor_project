@@ -162,9 +162,14 @@ class EpsExperimentPlot():
         self.fig.legend(loc=legend_loc)
 
 
-    def show_and_save(self, save_path=False):
+    def show_and_save(self, save_path=False, plt_y_lim=False, plt_x_lim=False):
         if save_path:
             plt.savefig(save_path + '.png', bbox_inches='tight', dpi=180)
+
+        if plt_y_lim:
+            self.ax1.set_ylim(plt_y_lim)
+        if plt_x_lim:
+            self.ax1.set_xlim(plt_x_lim)
         plt.show()
 
 
@@ -260,10 +265,10 @@ def plot_diff_stats_for_eps(path_plain_logits, path_to_attack_folder, path_csr_t
     plt.show()
 
 
-def plot_adv_imgs(eps, adv_imgs, adv_steps, mean, std, figsize=(15,10), save_path=None):
+def plot_adv_imgs(eps, adv_imgs, adv_steps, mean, std, figsize=(15,10), fig_scale=1.0, save_path=None):
     img_stack = torch.vstack((adv_imgs[None], adv_steps[None]))
     num_imgs = len(adv_imgs)
-    fig, axs = plt.subplots(2, num_imgs, figsize=((num_imgs*4) / 1.8, 9 / 1.8))
+    fig, axs = plt.subplots(2, num_imgs, figsize=(((num_imgs*4) / 1.8) * fig_scale, 9*fig_scale / 1.8))
     if len(axs.shape) == 1:
         axs = axs[:, None]
     for i in range(2):
