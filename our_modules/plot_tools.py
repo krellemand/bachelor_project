@@ -242,7 +242,7 @@ class IdOodPlot():
 
     def show_and_save(self, save_path=False):
         if save_path:
-            plt.savefig(save_path + '.png', transparent=True, bbox_inches = 'tight', dpi=180)
+            plt.savefig(save_path + '.pdf', transparent=True, bbox_inches = 'tight', dpi=180)
         plt.show()
 
 
@@ -447,5 +447,5 @@ class EpsExperimentPlotMedian():
 
     def show_and_save(self, save_path=False):
         if save_path:
-            plt.savefig(save_path + '.png', bbox_inches='tight', dpi=180)
+            plt.savefig(save_path + '.pdf', bbox_inches='tight', dpi=180)
         plt.show()
