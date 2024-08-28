@@ -222,16 +222,30 @@ class IdOodPlot():
 
     def make_scatter_plot(self, window_size=5,figsize=(30,6), xlabel=r'MLS of Unmodified Images', ylabel=r'Gradient Norm - $\mathbb{E}\:\left[||\:\nabla_{\bf{x}} \log S_{\hat{y}}({\bf{x}}) \:||_1 \mid \mathcal{S}\:\right]$'):
         self.fig, self.ax = plt.subplots(1,1, figsize=figsize)
-        self.ax.scatter(self.id_xs, self.id_ys, alpha=0.2, c='cornflowerblue')
-        self.ax.scatter(self.ood_xs, self.ood_ys, alpha=0.2, c='salmon')
+        x = np.concatenate((self.id_xs,self.ood_xs))
+        y = np.concatenate((self.id_ys, self.ood_ys))
+        cols = np.concatenate((np.tile("cornflowerblue",len(self.id_xs)),np.tile("salmon",len(self.ood_xs))))
+
+        rng = np.random.default_rng()
+        neworder=rng.permutation(len(x))
+
+        x_shuffled = x[neworder]
+        y_shuffled = y[neworder]
+        cols_shuffled = cols[neworder]
+
+        self.ax.scatter(x_shuffled, y_shuffled, c = cols_shuffled, alpha = 0.2, marker= '.')
+
+        # self.ax.scatter(self.id_xs, self.id_ys, alpha=0.2, c='cornflowerblue')
+        # self.ax.scatter(self.ood_xs, self.ood_ys, alpha=0.2, c='salmon')
+        
         id_scores_vs_means = [(score, np.mean(self.id_ys[max(i-window_size, 0):i + window_size + 1])) \
                               for i, score in enumerate(self.id_xs)][window_size:-window_size]
         ood_scores_vs_means = [(score, np.mean(self.ood_ys[max(i-window_size, 0):i + window_size + 1])) \
                               for i, score in enumerate(self.ood_xs)][window_size:-window_size]
         id_scores, id_means = list(zip(*id_scores_vs_means))
         ood_scores, ood_means = list(zip(*ood_scores_vs_means))
-        self.ax.plot(id_scores, id_means, label='Familiar')
-        self.ax.plot(ood_scores, ood_means, label='Novel', c='red')
+        self.ax.plot(ood_scores, ood_means, linewidth=1, label='Novel', c='red')
+        self.ax.plot(id_scores, id_means,linewidth= 1, label='Familiar')
         self.ax.set_xlabel(xlabel)
         self.ax.set_ylabel(ylabel)
 
