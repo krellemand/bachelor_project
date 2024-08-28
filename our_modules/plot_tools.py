@@ -148,7 +148,7 @@ class EpsExperimentPlot():
             if self.add_zoom:
                 self.axins.axvline(self.recent_eps[i], 0, 1, linestyle='dotted', c='gray', alpha=0.5)
         if h_line:
-            self.ax1.axhline(h_line, 0, 1, linestyle = 'dashed', c='gray', alpha=0.5, label=label_h)
+            self.ax1.axhline(h_line, 0, 1, linestyle = 'dashed', c='black', alpha=1, label=label_h)
             if self.add_zoom:
                 self.axins.axhline(h_line, 0, 1, linestyle = 'dashed', c='salmon', alpha=0.5)
         chosen_eps = [self.recent_eps[i] for i in eps_idxs]
@@ -159,12 +159,12 @@ class EpsExperimentPlot():
         locs = [l for l in locs if not np.isclose(l, chosen_eps, rtol=0.0, atol=0.05).any()]
         locs += chosen_eps
         plt.xticks([round(l, 2) for l in locs])
-        self.fig.legend(loc=legend_loc)
+        # self.fig.legend(loc=legend_loc, ncol=2)
 
 
     def show_and_save(self, save_path=False, plt_y_lim=False, plt_x_lim=False):
         if save_path:
-            plt.savefig(save_path + '.png', bbox_inches='tight', dpi=180)
+            plt.savefig(save_path + '.pdf', bbox_inches='tight', dpi=180)
 
         if plt_y_lim:
             self.ax1.set_ylim(plt_y_lim)
