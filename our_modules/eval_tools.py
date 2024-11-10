@@ -166,7 +166,7 @@ def max_logit_change_compared_id_vs_ood(path_plain_logits, path_fn_logits, path_
     fn_logits = torch.load(path_fn_logits)
     max_logit_plain = torch.amax(plain_logits, dim=1)
     max_logit_fn = torch.amax(fn_logits, dim=1)
-    diffs = max_logit_fn - max_logit_plain
+    diffs = max_logit_fn # - max_logit_plain
     id_stats = [(diff, mls_plain) for diff, target, mls_plain in zip(diffs, osr_targets, max_logit_plain) if not target]
     ood_stats = [(diff, mls_plain) for diff, target, mls_plain in zip(diffs, osr_targets, max_logit_plain) if target]
     return id_stats, ood_stats
@@ -204,5 +204,7 @@ def get_diff_stats_for_eps(path_plain_logits, path_to_attack_folder, path_csr_ta
         ood_box_stats = np.quantile(ood_diffs,[0.25, 0.5, 0.75])
         id_box_list.append(id_box_stats)
         ood_box_list.append(ood_box_stats)
-    sorted_zip = sorted(zip(eps_list, id_box_list, ood_box_list), key=lambda x: x[0])
+    relevant_eps_list = [ep for ep in eps_list if ep <= 1.3 ]
+    index = len(relevant_eps_list) - 1
+    sorted_zip = sorted(zip(eps_list, id_box_list, ood_box_list), key=lambda x: x[0])[:index]
     return list(zip(*sorted_zip))

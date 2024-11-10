@@ -256,12 +256,13 @@ def plot_diff_stats_for_eps(path_plain_logits, path_to_attack_folder, path_csr_t
     ax.fill_between(eps_list, id_q1, id_q3, color='cornflowerblue', alpha=0.2)
     ax.plot(eps_list, ood_q2, label='Novel', c='r')
     ax.fill_between(eps_list, ood_q1, ood_q3, color='salmon', alpha=0.2)
-    ax.axvline(eps_list[highlight_eps_idx], 0, 1, linestyle='dashed', c='gray', alpha=0.5, label=f'$\epsilon$ = {eps_list[highlight_eps_idx]:.2}')
+    # ax.axvline(eps_list[highlight_eps_idx], 0, 1, linestyle='dashed', c='gray', alpha=0.5, label=f'$\epsilon$ = {eps_list[highlight_eps_idx]:.2}')
+    ax.grid()
     ax.legend()
-    ax.set_xlabel('$\\epsilon$ - Size of the Advesarial Perturbation.')
-    ax.set_ylabel(r'ARS')
+    ax.set_xlabel('$\\epsilon$ - Size of the Adversarial Perturbation')
+    ax.set_ylabel(r'MLS')
     if save_path:
-        plt.savefig(save_path + '.png', transparent=True, bbox_inches='tight', dpi=180)
+        plt.savefig(save_path + '.pdf', transparent=True, bbox_inches='tight', dpi=180)
     plt.show()
 
 
