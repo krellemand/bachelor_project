@@ -59,7 +59,7 @@ def plot_image_i(i, dataset, mean, std, save_path=False, **plt_kwargs):
     plt.show()
 
 
-# Class that creates compares the differences of the advesarial attacks with different epsilon values.
+# Class that creates compares the differences of the adversarial attacks with different epsilon values.
 
 class EpsExperimentPlot():
     def __init__(self, eps_figsize=(10,4), adv_fisize=(15,6), which_lines='both', add_zoom=(-0.003, 0.012, 0.825, 0.84), mls_title='MLS', loc_zoom = 5):
@@ -68,12 +68,12 @@ class EpsExperimentPlot():
         eps_fig, eps_ax = plt.subplots(1,1, figsize=eps_figsize)
         self.fig = eps_fig
         self.ax1 = eps_ax
-        self.ax1.set_xlabel('$\\epsilon$ - Size of the Advesarial Perturbation.')
+        self.ax1.set_xlabel('$\\epsilon$ - Size of the Adversarial Perturbation')
         self.ax1.set_ylabel('AUROC', c='black')
         if self.add_zoom:
             self.axins = zoomed_inset_axes(self.ax1, 10, loc=loc_zoom)
         if self.which_lines == 'both':
-            self.ax1.set_xlabel('$\\epsilon$ - Size of the Advesarial Perturbation.')
+            self.ax1.set_xlabel('$\\epsilon$ - Size of the Adversarial Perturbation')
             self.ax1.set_ylabel('AUROC', c='red')
             self.ax2 = eps_ax.twinx()
             self.ax2.set_ylabel(mls_title, c='blue')
@@ -173,7 +173,7 @@ class EpsExperimentPlot():
         plt.show()
 
 
-# Plots that compare the differences of advesarial attacks influense on familiar or novel inputs.
+# Plots that compare the differences of adversarial attacks influense on familiar or novel inputs.
 
 class IdOodPlot():
     def __init__(self):
@@ -272,7 +272,7 @@ def plot_diff_stats_for_eps(path_plain_logits, path_to_attack_folder, path_csr_t
     ax.fill_between(eps_list, ood_q1, ood_q3, color='salmon', alpha=0.2)
     ax.axvline(eps_list[highlight_eps_idx], 0, 1, linestyle='dashed', c='gray', alpha=0.5, label=f'$\epsilon$ = {eps_list[highlight_eps_idx]:.2}')
     ax.legend()
-    ax.set_xlabel('$\\epsilon$ - Size of the Advesarial Perturbation.')
+    ax.set_xlabel('$\\epsilon$ - Size of the Adversarial Perturbation')
     ax.set_ylabel(r'ARS')
     if save_path:
         plt.savefig(save_path + '.png', transparent=True, bbox_inches='tight', dpi=180)
@@ -361,12 +361,12 @@ class EpsExperimentPlotMedian():
         eps_fig, eps_ax = plt.subplots(1,1, figsize=eps_figsize)
         self.fig = eps_fig
         self.ax1 = eps_ax
-        self.ax1.set_xlabel('$\\epsilon$ - Size of the Advesarial Perturbation.')
+        self.ax1.set_xlabel('$\\epsilon$ - Size of the Adversarial Perturbation')
         self.ax1.set_ylabel('AUROC', c='black')
         if self.add_zoom:
             self.axins = zoomed_inset_axes(self.ax1, 10, loc=1)
         if self.which_lines == 'both':
-            self.ax1.set_xlabel('$\\epsilon$ - Size of the Advesarial Perturbation.')
+            self.ax1.set_xlabel('$\\epsilon$ - Size of the Adversarial Perturbation')
             self.ax1.set_ylabel('AUROC', c='red')
             self.ax2 = eps_ax.twinx()
             self.ax2.set_ylabel(mls_title, c='blue')
