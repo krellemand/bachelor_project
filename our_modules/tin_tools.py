@@ -166,6 +166,19 @@ def save_informed_attack(logdir, path_to_fn_attack, path_to_fp_attack, split_num
     with open(logdir + 'attack_details.json', 'w') as file:
         json.dump(attack_details, file, indent=4)
 
+
+def save_informed_attack_for_all_eps(logdir, path_to_logits, path_to_plain, split_num, attack = "fn"):
+    for ep in os.listdir(path_to_logits):
+        if attack == "fn":
+            path_to_fn = path_to_logits + ep + '/'
+            path_to_fp = path_to_plain
+        elif attack == "fp":
+            path_to_fn = path_to_plain
+            path_to_fp = path_to_logits + ep + '/'
+        else:
+            raise ValueError("attack must be either 'fn' or 'fp'")
+        save_informed_attack(logdir + ep + '/', path_to_fn, path_to_fp, split_num)
+
 def perturb_tin_image(eps, img, path_to_pretrained_weights_folder, device, split_num=0, attack=fn_osr_fgsm, **attack_kwargs):
     model = get_model_for_split(split_num=split_num,
                                 path_to_pretrained_weights_folder=path_to_pretrained_weights_folder,
@@ -174,4 +187,23 @@ def perturb_tin_image(eps, img, path_to_pretrained_weights_folder, device, split
                        for ep in eps]
     adv_imgs, adv_steps = list(zip(*adv_img_and_step))
     return torch.cat(adv_imgs), torch.cat(adv_steps)
-    
+
+def save_mls_for_novel_or_known_classes(logdir, path_to_mls, type = "novel"):
+    mls = torch.load(path_to_mls + 'logits_0.pt')
+    csr_targets = torch.load(path_to_mls + 'csr_targets_0.pt')
+    osr_targets = get_osr_targets(csr_targets, 0)
+    if type == "novel":
+        mask = osr_targets
+    elif type == "known":
+        mask = ~osr_targets
+    else:
+        raise ValueError("type must be either 'novel' or 'known'")
+    mls = mls[mask]
+    os.makedirs(logdir, exist_ok = True)
+    torch.save(mls, logdir + 'logits_0.pt')
+    torch.save(csr_targets[mask], logdir + "csr_targets_0" + ".pt")
+
+def save_mls_for_novel_and_known_classes_for_all_epps(logdir, path_to_eps, type = "novel"):
+    for ep in os.listdir(path_to_eps):
+        save_mls_for_novel_or_known_classes(logdir + ep + '/', path_to_eps + ep + '/', type = type)
+

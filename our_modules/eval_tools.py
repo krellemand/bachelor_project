@@ -77,6 +77,20 @@ def load_and_eval_mls_osr(logit_file_path, csr_targets_file_path, split_num, dat
         return eval_osr_quantiles(mls_scores, open_set_labels, balance=balance, return_avg_score=return_avg_mls)
     return eval_osr(mls_scores, open_set_labels, balance=balance, return_avg_score=return_avg_mls)
 
+def load_mls(logit_file_path, csr_targets_file_path, split_num, dataset_name='tinyimagenet', balance=True, return_avg_mls=False, return_quantiles=False, msp=False):
+    assert int(logit_file_path[-4]) == split_num, "The split_num does not correspond to the split num of the file name"
+    split = osr_splits[dataset_name][split_num]
+    logits = torch.load(logit_file_path)
+    csr_targets = torch.load(csr_targets_file_path)
+    mls_scores = mls_osr_score(logits)
+    if msp:
+        # V- THIS IS THE MSP NOT THE MLS BUT FOR NAMING SIMPLICITY IT IS CALLED MLS
+        mls_scores = torch.amax(torch.softmax(logits, dim = 1), dim=-1)
+    open_set_labels = get_osr_targets(csr_targets, split)
+    if return_quantiles:
+        return np.quantile(mls_scores,[0.25, 0.5, 0.75])
+    return torch.median(mls_scores)
+
 # A function to load the logits and evaluate the AUROC of the MLS for all epsilon values
 def load_and_eval_mls_osr_for_all_eps(path_to_eps_dirs, split_num, dataset_name='tinyimagenet', balance=True, return_avg_mls=False, return_quantiles=False, msp=False):
     eps_dir_list = [dir_name for dir_name in os.listdir(path_to_eps_dirs) if dir_name[:3] == 'eps']
@@ -108,6 +122,28 @@ def load_and_eval_mls_osr_for_all_eps(path_to_eps_dirs, split_num, dataset_name=
     eps_list = [eps for eps, _ in eps_roc]
     roc_stats = [roc_stat for _, roc_stat in eps_roc]
     return eps_list, roc_stats
+
+def load_and_return_mls_for_all_eps(path_toeps_dirs, split_num, dataset_name='tinyimagenet', balance=True, return_avg_mls=False, return_quantiles=False, msp=False):
+    eps_dir_list = [dir_name for dir_name in os.listdir(path_toeps_dirs) if dir_name[:3] == 'eps']
+    eps_list = [float(dir_name[4:]) for dir_name in eps_dir_list]
+    avg_mls_list = []
+    for dir in eps_dir_list:
+        stats = load_mls(path_toeps_dirs + dir + '/logits_' + str(split_num) + '.pt',
+                                               path_toeps_dirs + dir + '/csr_targets_' + str(split_num) + '.pt',
+                                               split_num=split_num,
+                                               dataset_name=dataset_name,
+                                               balance=balance,
+                                               return_avg_mls=return_avg_mls,
+                                               return_quantiles=return_quantiles,
+                                               msp=msp)
+        avg_mls_list.append(stats)
+    eps_roc_mls = sorted(zip(eps_list, avg_mls_list), key=lambda x: x[0])
+    eps_list = [eps for eps, _ in eps_roc_mls]
+    # avg_mls_list = [mls for _, mls in eps_roc_mls]where the mls is a list of floats not a tensor
+    avg_mls_list = [mls for _, mls in eps_roc_mls]
+    return (eps_list, avg_mls_list)
+
+
 
 
 # A function to load logits for the ARS and evaluate it.

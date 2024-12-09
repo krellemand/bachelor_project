@@ -1,0 +1,4 @@
+{
+    "FN attack path": "/Users/gunder/Desktop/Skole/KUbacherlorfag/bachelor_project/logits/tinyimagenet/plain/",
+    "FP attack path": "/Users/gunder/Desktop/Skole/KUbacherlorfag/bachelor_project/logits/tinyimagenet/fp/fgsm/max/eps_0.0445/"
+}

@@ -4,7 +4,7 @@ from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 import numpy as np
 import torch
 
-from our_modules.eval_tools import load_and_eval_mls_osr_for_all_eps
+from our_modules.eval_tools import load_and_eval_mls_osr_for_all_eps, load_and_return_mls_for_all_eps
 from our_modules.eval_tools import load_and_eval_logit_change_scores_for_all_eps
 from our_modules.eval_tools import get_grad_norm_stats
 from our_modules.eval_tools import max_logit_change_compared_id_vs_ood
@@ -86,11 +86,18 @@ class EpsExperimentPlot():
         self.median_scores = None
 
 
-    def load_mls_stats(self, path_to_eps_dirs, split_num, balance=True, dataset_name='tinyimagenet', max_eps=None, msp=False):
-        self.eps, self.roc_stats, self.median_scores = load_and_eval_mls_osr_for_all_eps(path_to_eps_dirs, split_num, dataset_name=dataset_name, balance=balance, return_avg_mls=True, msp=msp)
-        if max_eps is not None:
-            data = [(eps, roc_stats, median_scores) for eps, roc_stats, median_scores in zip(self.eps, self.roc_stats, self.median_scores) if eps < max_eps]
-            self.eps, self.roc_stats, self.median_scores = tuple(zip(*data))
+    def load_mls_stats(self, path_to_eps_dirs, split_num, balance=True, dataset_name='tinyimagenet', max_eps=None, msp=False, auroc=True):
+        if auroc:
+            self.eps, self.roc_stats, self.median_scores = load_and_eval_mls_osr_for_all_eps(path_to_eps_dirs, split_num, dataset_name=dataset_name, balance=balance, return_avg_mls=True, msp=msp)
+            if max_eps is not None:
+                data = [(eps, roc_stats, median_scores) for eps, roc_stats, median_scores in zip(self.eps, self.roc_stats, self.median_scores) if eps < max_eps]
+                self.eps, self.roc_stats, self.median_scores = tuple(zip(*data))
+        else:
+            self.eps, self.median_scores = load_and_return_mls_for_all_eps(path_to_eps_dirs, split_num, dataset_name=dataset_name, balance=balance, return_avg_mls=True, msp=msp)
+            if max_eps is not None:
+                data = [(eps, median_scores) for eps, median_scores in zip(self.eps, self.median_scores) if eps < max_eps]
+                self.eps, self.median_scores = tuple(zip(*data))
+
 
 
     def load_logit_change_stats(self, path_to_eps_dirs, path_to_plain_logit_file, split_num, similarity_func=lambda after, before: torch.amax(after, dim=-1) - torch.amax(before, dim=-1), balance=True, dataset_name='tinyimagenet'):
@@ -98,9 +105,9 @@ class EpsExperimentPlot():
    
 
     def add_to_eps_plot(self, label_suffix='', **plt_kwargs):
-        aurocs = [x[1] for x in self.roc_stats]
         self.recent_eps = np.array(self.eps)
         if self.which_lines == 'both':
+            aurocs = [x[1] for x in self.roc_stats]
             self.ax1.plot(self.eps, aurocs, c='red', label='AUROC' + label_suffix)
             if self.add_zoom:
                 self.axins.plot(self.eps, aurocs, c='red')
@@ -108,6 +115,7 @@ class EpsExperimentPlot():
             if self.add_zoom:
                 self.axins.plot(self.eps, self.median_scores, c='blue')
         if self.which_lines == 'AUROC':
+            aurocs = [x[1] for x in self.roc_stats]
             self.ax1.plot(self.eps, aurocs, label=label_suffix, **plt_kwargs)
             if self.add_zoom:
                 self.axins.plot(self.eps, aurocs, **plt_kwargs)
@@ -122,8 +130,8 @@ class EpsExperimentPlot():
 
 
     def load_and_add_mls_to_eps_plot(self, path_to_eps_dirs, split_num, balance=True, label_suffix='', 
-                                     dataset_name='tinyimagenet', max_eps=None, invert_auroc=False,msp=False, **plt_kwargs):
-        self.load_mls_stats(path_to_eps_dirs, split_num, balance=balance, dataset_name=dataset_name, max_eps=max_eps, msp=msp)
+                                     dataset_name='tinyimagenet', max_eps=None, invert_auroc=False,msp=False, auroc = True, **plt_kwargs):
+        self.load_mls_stats(path_to_eps_dirs, split_num, balance=balance, dataset_name=dataset_name, max_eps=max_eps, msp=msp, auroc=auroc)
         self.add_to_eps_plot(label_suffix=label_suffix, **plt_kwargs)
 
 
@@ -279,7 +287,7 @@ def plot_diff_stats_for_eps(path_plain_logits, path_to_attack_folder, path_csr_t
     plt.show()
 
 
-def plot_adv_imgs(eps, adv_imgs, adv_steps, mean, std, figsize=(15,10), fig_scale=1.0, save_path=None):
+def plot_adv_imgs(eps, adv_imgs, adv_steps, mean, std, figsize=(15,10), fig_scale=1.0, save_path=None, fontsize = 10):
     img_stack = torch.vstack((adv_imgs[None], adv_steps[None]))
     num_imgs = len(adv_imgs)
     fig, axs = plt.subplots(2, num_imgs, figsize=(((num_imgs*4) / 1.8) * fig_scale, 9*fig_scale / 1.8))
@@ -290,10 +298,10 @@ def plot_adv_imgs(eps, adv_imgs, adv_steps, mean, std, figsize=(15,10), fig_scal
             plot_image_on_ax(axs[i, j], img_stack[i, j], mean, std)
             axs[i, j].axis('off')
             if i == 0:
-                axs[i, j].set_title((f"$\\epsilon = {round(eps[j],2)}$"))
+                axs[i, j].set_title((f"$\\epsilon = {round(eps[j],2)}$"), fontsize=fontsize)
     fig.tight_layout()
     if save_path:
-        plt.savefig(save_path + '.png', bbox_inches='tight', dpi=180)
+        plt.savefig(save_path + '.pdf', bbox_inches='tight', dpi=180)
     plt.show()
 
 
